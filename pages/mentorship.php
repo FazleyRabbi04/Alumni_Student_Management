@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once '../config/database.php';
 startSecureSession();
 
 // If user is logged in, redirect to dashboard
