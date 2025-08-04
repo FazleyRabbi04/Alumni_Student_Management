@@ -2,7 +2,7 @@
 class database
 {
     private $host = 'localhost';
-    private $db_name = 'alumni_network_management';
+    private $db_name = 'alumninetworking';
     private $username = 'root';
     private $password = '';
     public $conn;

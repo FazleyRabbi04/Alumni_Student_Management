@@ -260,9 +260,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <label for="gender" class="form-label">Gender</label>
             <select name="gender" class="form-control" id="gender" required>
                 <option value="">Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
             </select>
         </div>
         <div class="mb-3">
@@ -327,6 +327,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             gradBatchYearInput.style.display = 'block';
             batchYearInput.style.display = 'none';
         }
+    });
+    document.querySelector('form').addEventListener('submit', function () {
+    if (document.getElementById('user_type').value === 'student') {
+        document.getElementById('grad_batch_year').value = document.getElementById('batch_year').value;
+    } else {
+        document.getElementById('batch_year').value = document.getElementById('grad_batch_year').value;
+    }
     });
 </script>
 </body>
