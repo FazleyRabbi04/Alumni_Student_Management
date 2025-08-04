@@ -14,7 +14,7 @@ if (isLoggedIn()) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Alumni Relationship & Networking System" />
-    <title>Events - Alumni Relationship & Networking System</title>
+    <title>Careers - Alumni Relationship & Networking System</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&family=Roboto:wght@500;700&display=swap" rel="stylesheet" />
@@ -75,7 +75,7 @@ if (isLoggedIn()) {
             margin-bottom: 2rem;
         }
 
-        .event-card {
+        .job-card {
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             background-color: #ffffff;
@@ -84,7 +84,7 @@ if (isLoggedIn()) {
             height: 100%;
         }
 
-        .event-card:hover {
+        .job-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
         }
@@ -139,13 +139,13 @@ if (isLoggedIn()) {
                         <a class="nav-link" href="profile.php">Alumni Profiles</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="events.php">Events</a>
+                        <a class="nav-link" href="events.php">Events</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="mentorship.php">Mentorship</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="careers.php">Careers</a>
+                        <a class="nav-link active" href="careers.php">Careers</a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="eventsDropdown" role="button" data-bs-toggle="dropdown">Register</a>
@@ -163,33 +163,38 @@ if (isLoggedIn()) {
 <!-- Hero Section -->
 <section class="hero" data-aos="fade-up">
     <div class="container">
-        <h1 class="display-4">Events</h1>
+        <h1 class="display-4">Career Opportunities</h1>
+        <p class="lead">Explore job and internship opportunities posted by our alumni.</p>
     </div>
 </section>
 
-<!-- Events Section -->
+<!-- Careers Section -->
 <section class="py-5">
     <div class="container">
-        <ul class="nav nav-tabs mb-4" id="eventTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab">Upcoming Events</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">Past Events</button>
-            </li>
-        </ul>
-        <div class="tab-content" id="eventTabContent">
-            <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
-                <div class="row g-4" id="upcomingEvents" data-aos="fade-up" data-aos-delay="100">
-                    <!-- Events will be loaded dynamically -->
-                </div>
-            </div>
-            <div class="tab-pane fade" id="past" role="tabpanel">
-                <div class="row g-4" id="pastEvents" data-aos="fade-up" data-aos-delay="100">
-                    <!-- Past events will be loaded dynamically -->
-                </div>
-            </div>
+        <h2 class="section-title text-navy" data-aos="fade-up">Job Listings</h2>
+        <div class="row g-4" id="jobListings" data-aos="fade-up" data-aos-delay="100">
+            <!-- Jobs will be loaded dynamically -->
         </div>
+        <h2 class="section-title text-navy mt-5" data-aos="fade-up">Post a Job</h2>
+        <form class="job-form" data-aos="fade-up" data-aos-delay="200">
+            <div class="mb-3">
+                <label for="jobTitle" class="form-label">Job Title</label>
+                <input type="text" class="form-control" id="jobTitle" required />
+            </div>
+            <div class="mb-3">
+                <label for="company" class="form-label">Company</label>
+                <input type="text" class="form-control" id="company" required />
+            </div>
+            <div class="mb-3">
+                <label for="location" class="form-label">Location</label>
+                <input type="text" class="form-control" id="location" required />
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Post Job</button>
+        </form>
     </div>
 </section>
 
@@ -220,72 +225,43 @@ if (isLoggedIn()) {
 <script>
     AOS.init({ duration: 1000, once: true });
 
-    const apiUrl = 'http://localhost:8080/api/events';
+    const apiUrl = 'http://localhost:8080/api/jobs';
 
-    function loadEvents() {
+    function loadJobs() {
         fetch(apiUrl)
             .then(response => response.json())
-            .then(events => {
-                const upcomingEvents = document.getElementById('upcomingEvents');
-                const pastEvents = document.getElementById('pastEvents');
-                upcomingEvents.innerHTML = '';
-                pastEvents.innerHTML = '';
+            .then(jobs => {
+                const jobListings = document.getElementById('jobListings');
+                jobListings.innerHTML = '';
 
-                const currentDate = new Date();
-                const upcoming = events.filter(event => new Date(event.date) >= currentDate);
-                const past = events.filter(event => new Date(event.date) < currentDate);
-
-                if (!upcoming.length) {
-                    upcomingEvents.innerHTML = '<p class="text-center">No upcoming events found.</p>';
-                } else {
-                    upcoming.forEach(event => {
-                        const eventDate = new Date(event.date).toLocaleDateString();
-                        const card = document.createElement('div');
-                        card.className = 'col-md-6';
-                        card.innerHTML = `
-                            <div class="event-card h-100">
-                                <h5>${event.title}</h5>
-                                <p><strong>Date:</strong> ${eventDate}</p>
-                                <p><strong>Time:</strong> ${event.time}</p>
-                                <p><strong>Venue:</strong> ${event.location}</p>
-                                <p><strong>Type:</strong> ${event.type}</p>
-                                <p>${event.description}</p>
-                                <a href="#" class="btn btn-primary">Register for Event</a>
-                            </div>
-                        `;
-                        upcomingEvents.appendChild(card);
-                    });
+                if (!jobs.length) {
+                    jobListings.innerHTML = '<p class="text-center">No job listings found.</p>';
+                    return;
                 }
 
-                if (!past.length) {
-                    pastEvents.innerHTML = '<p class="text-center">No past events found.</p>';
-                } else {
-                    past.forEach(event => {
-                        const eventDate = new Date(event.date).toLocaleDateString();
-                        const card = document.createElement('div');
-                        card.className = 'col-md-6';
-                        card.innerHTML = `
-                            <div class="event-card h-100">
-                                <h5>${event.title}</h5>
-                                <p><strong>Date:</strong> ${eventDate}</p>
-                                <p><strong>Time:</strong> ${event.time}</p>
-                                <p><strong>Venue:</strong> ${event.location}</p>
-                                <p><strong>Type:</strong> ${event.type}</p>
-                                <p>${event.description}</p>
-                                <a href="#" class="btn btn-secondary">View Details</a>
-                            </div>
-                        `;
-                        pastEvents.appendChild(card);
-                    });
-                }
+                jobs.forEach(job => {
+                    const jobDate = new Date(job.posted_on).toLocaleDateString();
+                    const card = document.createElement('div');
+                    card.className = 'col-md-6';
+                    card.innerHTML = `
+                        <div class="job-card h-100">
+                            <h5>${job.title}</h5>
+                            <p><strong>Company:</strong> ${job.company}</p>
+                            <p><strong>Location:</strong> ${job.location}</p>
+                            <p><strong>Description:</strong> ${job.description}</p>
+                            <p><strong>Posted on:</strong> ${jobDate}</p>
+                        </div>
+                    `;
+                    jobListings.appendChild(card);
+                });
             })
             .catch(err => {
-                console.error('Error loading events:', err);
-                document.getElementById('upcomingEvents').innerHTML = '<p class="text-center text-danger">Failed to load events.</p>';
+                console.error('Error loading jobs:', err);
+                jobListings.innerHTML = '<p class="text-center text-danger">Failed to load job listings.</p>';
             });
     }
 
-    window.addEventListener('load', loadEvents);
+    window.addEventListener('load', loadJobs);
 </script>
 </body>
 </html>

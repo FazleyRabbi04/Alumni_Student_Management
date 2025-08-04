@@ -14,7 +14,7 @@ if (isLoggedIn()) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Alumni Relationship & Networking System" />
-    <title>Events - Alumni Relationship & Networking System</title>
+    <title>Alumni Relationship & Networking System</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&family=Roboto:wght@500;700&display=swap" rel="stylesheet" />
@@ -58,7 +58,7 @@ if (isLoggedIn()) {
         .hero {
             background: linear-gradient(to right, #002147, #0077c8);
             color: #fff;
-            padding: 60px 20px;
+            padding: 100px 20px;
             text-align: center;
             position: relative;
         }
@@ -68,6 +68,26 @@ if (isLoggedIn()) {
             font-size: 2.75rem;
         }
 
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+        }
+
+        #viewEventsBtn {
+            background-color: #ffffff;
+            color: #002147;
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        #viewEventsBtn:hover {
+            background-color: #e3e3e3;
+            color: #002147;
+        }
+
         h2.section-title {
             font-weight: 700;
             font-family: 'Roboto', sans-serif;
@@ -75,7 +95,7 @@ if (isLoggedIn()) {
             margin-bottom: 2rem;
         }
 
-        .event-card {
+        .feature-card {
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             background-color: #ffffff;
@@ -84,9 +104,14 @@ if (isLoggedIn()) {
             height: 100%;
         }
 
-        .event-card:hover {
+        .feature-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
         }
 
         .footer {
@@ -133,19 +158,7 @@ if (isLoggedIn()) {
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="home.php">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="profile.php">Alumni Profiles</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="events.php">Events</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="mentorship.php">Mentorship</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="careers.php">Careers</a>
+                        <a class="nav-link active" href="home.php">Home</a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="eventsDropdown" role="button" data-bs-toggle="dropdown">Register</a>
@@ -163,33 +176,64 @@ if (isLoggedIn()) {
 <!-- Hero Section -->
 <section class="hero" data-aos="fade-up">
     <div class="container">
-        <h1 class="display-4">Events</h1>
+        <h1 class="display-4">Welcome to Alumni Relationship & Networking System</h1>
+        <p class="lead">Connect, engage, and grow with our community.</p>
+        <button class="btn" id="viewEventsBtn">View Upcoming Events</button>
     </div>
 </section>
 
-<!-- Events Section -->
-<section class="py-5">
+<!-- Features Section -->
+<section class="features py-5" id="features">
     <div class="container">
-        <ul class="nav nav-tabs mb-4" id="eventTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab">Upcoming Events</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">Past Events</button>
-            </li>
-        </ul>
-        <div class="tab-content" id="eventTabContent">
-            <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
-                <div class="row g-4" id="upcomingEvents" data-aos="fade-up" data-aos-delay="100">
-                    <!-- Events will be loaded dynamically -->
+        <h2 class="section-title text-center text-navy" data-aos="fade-up">Key Features</h2>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            <div class="col" data-aos="zoom-in">
+                <div class="feature-card h-100">
+                    <h5 class="card-title">Alumni Profiles</h5>
+                    <p>Access detailed profiles including education, employment, and achievements.</p>
                 </div>
             </div>
-            <div class="tab-pane fade" id="past" role="tabpanel">
-                <div class="row g-4" id="pastEvents" data-aos="fade-up" data-aos-delay="100">
-                    <!-- Past events will be loaded dynamically -->
+            <div class="col" data-aos="zoom-in" data-aos-delay="100">
+                <div class="feature-card h-100">
+                    <h5 class="card-title">Events & Participation</h5>
+                    <p>Register for events and provide feedback.</p>
+                </div>
+            </div>
+            <div class="col" data-aos="zoom-in" data-aos-delay="200">
+                <div class="feature-card h-100">
+                    <h5 class="card-title">Mentorship Programs</h5>
+                    <p>Connect with mentors for career guidance.</p>
+                </div>
+            </div>
+            <div class="col" data-aos="zoom-in" data-aos-delay="300">
+                <div class="feature-card h-100">
+                    <h5 class="card-title">Career Opportunities</h5>
+                    <p>Explore job and internship listings.</p>
+                </div>
+            </div>
+            <div class="col" data-aos="zoom-in" data-aos-delay="400">
+                <div class="feature-card h-100">
+                    <h5 class="card-title">Admin Tools</h5>
+                    <p>Manage communications and generate reports.</p>
+                </div>
+            </div>
+            <div class="col" data-aos="zoom-in" data-aos-delay="500">
+                <div class="feature-card h-100">
+                    <h5 class="card-title">Future Enhancements</h5>
+                    <p>Mobile app, analytics, and AI recommendations.</p>
                 </div>
             </div>
         </div>
+    </div>
+</section>
+
+<!-- Upcoming Events Section -->
+<section id="events" class="py-5">
+    <div class="container">
+        <h2 class="section-title text-center text-navy" data-aos="fade-up">Upcoming Events</h2>
+        <ul id="eventList" class="list-group" data-aos="fade-up" data-aos-delay="100">
+            <!-- Events will be loaded dynamically -->
+        </ul>
     </div>
 </section>
 
@@ -226,66 +270,33 @@ if (isLoggedIn()) {
         fetch(apiUrl)
             .then(response => response.json())
             .then(events => {
-                const upcomingEvents = document.getElementById('upcomingEvents');
-                const pastEvents = document.getElementById('pastEvents');
-                upcomingEvents.innerHTML = '';
-                pastEvents.innerHTML = '';
+                const eventList = document.getElementById('eventList');
+                eventList.innerHTML = '';
 
-                const currentDate = new Date();
-                const upcoming = events.filter(event => new Date(event.date) >= currentDate);
-                const past = events.filter(event => new Date(event.date) < currentDate);
-
-                if (!upcoming.length) {
-                    upcomingEvents.innerHTML = '<p class="text-center">No upcoming events found.</p>';
-                } else {
-                    upcoming.forEach(event => {
-                        const eventDate = new Date(event.date).toLocaleDateString();
-                        const card = document.createElement('div');
-                        card.className = 'col-md-6';
-                        card.innerHTML = `
-                            <div class="event-card h-100">
-                                <h5>${event.title}</h5>
-                                <p><strong>Date:</strong> ${eventDate}</p>
-                                <p><strong>Time:</strong> ${event.time}</p>
-                                <p><strong>Venue:</strong> ${event.location}</p>
-                                <p><strong>Type:</strong> ${event.type}</p>
-                                <p>${event.description}</p>
-                                <a href="#" class="btn btn-primary">Register for Event</a>
-                            </div>
-                        `;
-                        upcomingEvents.appendChild(card);
-                    });
+                if (!events.length) {
+                    eventList.innerHTML = '<li class="list-group-item">No upcoming events found.</li>';
+                    return;
                 }
 
-                if (!past.length) {
-                    pastEvents.innerHTML = '<p class="text-center">No past events found.</p>';
-                } else {
-                    past.forEach(event => {
-                        const eventDate = new Date(event.date).toLocaleDateString();
-                        const card = document.createElement('div');
-                        card.className = 'col-md-6';
-                        card.innerHTML = `
-                            <div class="event-card h-100">
-                                <h5>${event.title}</h5>
-                                <p><strong>Date:</strong> ${eventDate}</p>
-                                <p><strong>Time:</strong> ${event.time}</p>
-                                <p><strong>Venue:</strong> ${event.location}</p>
-                                <p><strong>Type:</strong> ${event.type}</p>
-                                <p>${event.description}</p>
-                                <a href="#" class="btn btn-secondary">View Details</a>
-                            </div>
-                        `;
-                        pastEvents.appendChild(card);
-                    });
-                }
+                events.forEach(event => {
+                    const eventDate = new Date(event.date).toLocaleDateString();
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.innerHTML = `<strong>${event.title}</strong> - ${eventDate}<br>${event.description}<br><em>Location: ${event.location}</em>`;
+                    eventList.appendChild(li);
+                });
             })
             .catch(err => {
                 console.error('Error loading events:', err);
-                document.getElementById('upcomingEvents').innerHTML = '<p class="text-center text-danger">Failed to load events.</p>';
+                const eventList = document.getElementById('eventList');
+                eventList.innerHTML = '<li class="list-group-item text-danger">Failed to load events.</li>';
             });
     }
 
     window.addEventListener('load', loadEvents);
+    document.getElementById('viewEventsBtn').addEventListener('click', () => {
+        document.getElementById('events').scrollIntoView({ behavior: 'smooth' });
+    });
 </script>
 </body>
 </html>

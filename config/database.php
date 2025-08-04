@@ -55,7 +55,7 @@ function isLoggedIn() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        header('Location: /alumni-network/auth/login.php');
+        header('Location: /alumni-network/auth/signin.php');
         exit();
     }
 }
