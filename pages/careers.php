@@ -22,6 +22,9 @@ if (isLoggedIn()) {
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+
     <!-- AOS Animation CSS -->
     <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
 
@@ -82,11 +85,78 @@ if (isLoggedIn()) {
             padding: 24px;
             transition: all 0.3s ease;
             height: 100%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
 
         .job-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .job-card h5 {
+            color: #002147;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .job-card .company-info {
+            color: #0077c8;
+            font-weight: 500;
+        }
+
+        .job-card .location-info {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .job-card .date-info {
+            color: #888;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .post-job-form {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background-color: #002147;
+            border-color: #002147;
+            font-weight: 600;
+            padding: 12px 30px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #0077c8;
+            border-color: #0077c8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 119, 200, 0.3);
+        }
+
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #0077c8;
+            box-shadow: 0 0 0 0.2rem rgba(0, 119, 200, 0.25);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner-border {
+            color: #002147;
         }
 
         .footer {
@@ -117,6 +187,21 @@ if (isLoggedIn()) {
 
         .social-icons img:hover {
             filter: grayscale(0%);
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .job-card {
+                margin-bottom: 1rem;
+            }
         }
     </style>
 </head>
@@ -164,104 +249,98 @@ if (isLoggedIn()) {
 <section class="hero" data-aos="fade-up">
     <div class="container">
         <h1 class="display-4">Career Opportunities</h1>
-        <p class="lead">Explore job and internship opportunities posted by our alumni.</p>
+        <p class="lead">Explore job and internship opportunities posted by our alumni network.</p>
+        <div class="mt-4">
+            <a href="#job-listings" class="btn btn-light btn-lg me-3">
+                <i class="fas fa-search me-2"></i>Browse Jobs
+            </a>
+            <a href="#post-job" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-plus me-2"></i>Post a Job
+            </a>
+        </div>
     </div>
 </section>
 
-<!-- Careers Section -->
-<section class="py-5">
+<!-- Job Search Section -->
+<section class="py-4 bg-white">
     <div class="container">
-        <h2 class="section-title text-navy" data-aos="fade-up">Job Listings</h2>
-        <div class="row g-4" id="jobListings" data-aos="fade-up" data-aos-delay="100">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="jobSearch" placeholder="Search jobs by title, company, or location...">
+                    <button class="btn btn-primary" type="button" onclick="searchJobs()">Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Job Listings Section -->
+<section class="py-5" id="job-listings">
+    <div class="container">
+        <h2 class="section-title text-navy text-center" data-aos="fade-up">Latest Job Opportunities</h2>
+
+        <!-- Loading State -->
+        <div id="jobsLoading" class="loading">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading job opportunities...</p>
+        </div>
+
+        <!-- Jobs Container -->
+        <div class="row g-4" id="jobListings" data-aos="fade-up" data-aos-delay="100" style="display: none;">
             <!-- Jobs will be loaded dynamically -->
         </div>
-        <h2 class="section-title text-navy mt-5" data-aos="fade-up">Post a Job</h2>
-        <form class="job-form" data-aos="fade-up" data-aos-delay="200">
-            <div class="mb-3">
-                <label for="jobTitle" class="form-label">Job Title</label>
-                <input type="text" class="form-control" id="jobTitle" required />
-            </div>
-            <div class="mb-3">
-                <label for="company" class="form-label">Company</label>
-                <input type="text" class="form-control" id="company" required />
-            </div>
-            <div class="mb-3">
-                <label for="location" class="form-label">Location</label>
-                <input type="text" class="form-control" id="location" required />
-            </div>
-            <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <textarea class="form-control" id="description" rows="4" required></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Post Job</button>
-        </form>
+
+        <!-- No Jobs Message -->
+        <div id="noJobsMessage" class="text-center py-5" style="display: none;">
+            <i class="fas fa-briefcase fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No job opportunities found</h4>
+            <p class="text-muted">Be the first to post a job opportunity for our alumni network!</p>
+            <a href="#post-job" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Post a Job
+            </a>
+        </div>
     </div>
 </section>
 
-<!-- Footer -->
-<footer class="footer text-center">
+<!-- Post Job Section -->
+<section class="py-5 bg-light" id="post-job">
     <div class="container">
-        <div class="fw-bold fs-5 mb-2">Alumni Relationship & Networking System</div>
-        <div class="mb-3">
-            <a href="profile.php">Alumni Profiles</a>
-            <a href="events.php">Events</a>
-            <a href="mentorship.php">Mentorship</a>
-            <a href="careers.php">Careers</a>
-            <a href="terms.php">Terms</a>
-            <a href="privacy.php">Privacy</a>
-        </div>
-        <div class="social-icons mb-2">
-            <a href="#"><img src="https://via.placeholder.com/24/facebook.png" alt="Facebook" /></a>
-            <a href="#"><img src="https://via.placeholder.com/24/twitter.png" alt="Twitter" /></a>
-            <a href="#"><img src="https://via.placeholder.com/24/linkedin.png" alt="LinkedIn" /></a>
-        </div>
-        <p class="small mb-0">&copy; 2025 ABC University. All rights reserved.</p>
-    </div>
-</footer>
-
-<!-- JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-<script>
-    AOS.init({ duration: 1000, once: true });
-
-    const apiUrl = 'http://localhost:8080/api/jobs';
-
-    function loadJobs() {
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(jobs => {
-                const jobListings = document.getElementById('jobListings');
-                jobListings.innerHTML = '';
-
-                if (!jobs.length) {
-                    jobListings.innerHTML = '<p class="text-center">No job listings found.</p>';
-                    return;
-                }
-
-                jobs.forEach(job => {
-                    const jobDate = new Date(job.posted_on).toLocaleDateString();
-                    const card = document.createElement('div');
-                    card.className = 'col-md-6';
-                    card.innerHTML = `
-                        <div class="job-card h-100">
-                            <h5>${job.title}</h5>
-                            <p><strong>Company:</strong> ${job.company}</p>
-                            <p><strong>Location:</strong> ${job.location}</p>
-                            <p><strong>Description:</strong> ${job.description}</p>
-                            <p><strong>Posted on:</strong> ${jobDate}</p>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="section-title text-navy text-center" data-aos="fade-up">Post a Job Opportunity</h2>
+                <div class="post-job-form" data-aos="fade-up" data-aos-delay="200">
+                    <form id="jobPostForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="jobTitle" class="form-label">
+                                    <i class="fas fa-briefcase me-2"></i>Job Title *
+                                </label>
+                                <input type="text" class="form-control" id="jobTitle" name="title" required
+                                       placeholder="e.g., Software Engineer">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="company" class="form-label">
+                                    <i class="fas fa-building me-2"></i>Company *
+                                </label>
+                                <input type="text" class="form-control" id="company" name="company" required
+                                       placeholder="e.g., TechCorp Inc.">
+                            </div>
                         </div>
-                    `;
-                    jobListings.appendChild(card);
-                });
-            })
-            .catch(err => {
-                console.error('Error loading jobs:', err);
-                jobListings.innerHTML = '<p class="text-center text-danger">Failed to load job listings.</p>';
-            });
-    }
-
-    window.addEventListener('load', loadJobs);
-</script>
-</body>
-</html>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Location *
+                                </label>
+                                <input type="text" class="form-control" id="location" name="location" required
+                                       placeholder="e.g., Dhaka, Bangladesh">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="jobType" class="form-label">
+                                    <i class="fas fa-clock me-2"></i>Job Type
+                                </label>
+                                <select class="form-control" id="jobType" name="job_type">
+                                    <option value="">Select Type</option>

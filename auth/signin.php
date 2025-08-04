@@ -1,60 +1,35 @@
 <?php
-$success = "";
-$error = "";
+require_once '../config/database.php';
+startSecureSession();
 
-// Handle form submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = trim($_POST["name"]);
-    $email = trim($_POST["email"]);
-    $password = $_POST["password"];
-    $confirm_password = $_POST["confirm_password"];
+// If user is already logged in, redirect to dashboard
+if (isLoggedIn()) {
+    header('Location: ../pages/dashboard.php');
+    exit();
+}
 
-    // Basic email pattern
-    $emailPattern = "/^[a-zA-Z0-9._%+-]+@abc\.edu$/";
+$error = '';
+$success = '';
 
-    if (!preg_match($emailPattern, $email)) {
-        $error = "Email must be in the format example@abc.edu";
-    } elseif (strlen($password) < 6) {
-        $error = "Password must be at least 6 characters long.";
-    } elseif ($password !== $confirm_password) {
-        $error = "Passwords do not match.";
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+
+    if (empty($email) || empty($password)) {
+        $error = 'Please fill in all fields.';
     } else {
-        // Hash password
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-        // Connect to database (update credentials if needed)
-        $conn = new mysqli("localhost", "root", "", "alumninetworking");
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
-
-        // Check if email already exists
-        $stmt = $conn->prepare("SELECT * FROM person WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $stmt->store_result();
-
-        if ($stmt->num_rows > 0) {
-            $error = "An account with this email already exists.";
+        $user = authenticateUser($email, $password);
+        if ($user) {
+            $_SESSION['user_id'] = $user['person_id'];
+            $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+            header('Location: ../pages/dashboard.php');
+            exit();
         } else {
-            // Insert new user
-            $stmt = $conn->prepare("INSERT INTO person (name, email, password) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $name, $email, $hashed_password);
-            if ($stmt->execute()) {
-                // Success
-                header("Location: signin.html");
-                exit();
-            } else {
-                $error = "Failed to register. Try again later.";
-            }
+            $error = 'Invalid email or password.';
         }
-
-        $stmt->close();
-        $conn->close();
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -63,7 +38,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <title>Sign In - Alumni Relationship & Networking System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -75,7 +49,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             min-height: 100vh;
             margin: 0;
             color: #333;
-            transition: background 0.5s ease;
         }
 
         @keyframes gradientAnimation {
@@ -94,21 +67,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-weight: 700;
             color: #003087 !important;
             font-size: 1.8rem;
-            display: flex;
-            align-items: center;
         }
 
         .nav-link {
             font-weight: 500;
             color: #555 !important;
             padding: 0.5rem 1rem;
-            transition: color 0.3s ease, background-color 0.3s ease;
+            transition: color 0.3s ease;
         }
 
-        .nav-link:hover, .nav-link.active {
+        .nav-link:hover {
             color: #0059ff !important;
-            background-color: rgba(0, 89, 255, 0.1);
-            border-radius: 5px;
         }
 
         .container.mt-5 {
@@ -144,6 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .form-control {
             border-radius: 10px;
             border-color: #ced4da;
+            padding: 12px;
         }
 
         .form-control:focus {
@@ -156,9 +126,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-color: #003087;
             font-weight: 600;
             border-radius: 10px;
-            padding: 10px;
+            padding: 12px;
             width: 100%;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.3s ease;
         }
 
         .btn-primary:hover {
@@ -168,25 +138,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: 0 4px 15px rgba(0, 89, 255, 0.3);
         }
 
-        .spinner-border {
-            display: none;
-        }
-
-        .error {
-            color: red;
-            font-size: 0.9rem;
-            margin-top: 5px;
-            display: none;
-        }
-
-        .text-center.mt-3 a {
-            font-weight: 500;
-            color: #003087;
-        }
-
-        .text-center.mt-3 a:hover {
-            color: #0059ff;
-            text-decoration: underline;
+        .alert {
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
 
         .footer {
@@ -197,59 +151,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-top: auto;
         }
 
-        .footer h5 {
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-
-        .footer a {
-            color: #003087;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .footer a:hover {
-            color: #0059ff;
-        }
-
-        .footer .social-icons a {
-            margin-right: 15px;
-            font-size: 1.2rem;
-            color: #003087;
-            transition: color 0.3s ease;
-        }
-
-        .footer .social-icons a:hover {
-            color: #0059ff;
-        }
-
         @media (max-width: 768px) {
             .login-section {
                 margin: 40px 20px;
                 padding: 20px;
             }
-            .navbar-brand {
-                font-size: 1.5rem;
-            }
-        }
-
-        .hidden {
-            display: none;
         }
     </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light">
     <div class="container">
-        <a class="navbar-brand" href="home.html">Alumni Relationship & Networking System</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <a class="navbar-brand" href="../home.php">Alumni Relationship & Networking System</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="home.html">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="signup.html">Sign Up</a></li>
+                <li class="nav-item"><a class="nav-link" href="../home.php">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="signup.php">Sign Up</a></li>
             </ul>
         </div>
     </div>
@@ -258,21 +178,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <div class="container mt-5">
     <div class="login-section">
         <h2>Sign In</h2>
-        <form id="loginForm" action="login.php" method="POST" onsubmit="return validateLogin(event)">
+
+        <?php if (!empty($error)): ?>
+            <div class="alert alert-danger" role="alert">
+                <?php echo htmlspecialchars($error); ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($success)): ?>
+            <div class="alert alert-success" role="alert">
+                <?php echo htmlspecialchars($success); ?>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST" action="signin.php">
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" placeholder="e.g., user@abc.edu" required>
-                <div id="emailError" class="error"></div>
+                <input type="email" class="form-control" id="email" name="email"
+                       value="<?php echo htmlspecialchars($email ?? ''); ?>" required>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
                 <input type="password" class="form-control" id="password" name="password" required>
-                <div id="passwordError" class="error"></div>
             </div>
             <button type="submit" class="btn btn-primary">Sign In</button>
-            <div id="loginError" class="error mt-2"></div>
         </form>
-        <p class="text-center mt-3">Don't have an account? <a href="signup.html">Sign Up</a></p>
+        <p class="text-center mt-3">Don't have an account? <a href="signup.php">Sign Up</a></p>
     </div>
 </div>
 
@@ -283,46 +214,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    function validateLogin(event) {
-        event.preventDefault();
-        let isValid = true;
-        const errors = {};
-
-        // Reset error messages
-        document.querySelectorAll('.error').forEach(error => error.style.display = 'none');
-
-        // Validate Email
-        const email = document.getElementById('email').value.trim();
-        const emailRegex = /^[a-zA-Z0-9]+@abc\.edu$/;
-        if (!email || !emailRegex.test(email)) {
-            errors.email = 'Email must be in the format (e.g., example@abc.edu)';
-            isValid = false;
-        }
-
-        // Validate Password
-        const password = document.getElementById('password').value;
-        if (!password || password.length < 6) {
-            errors.password = 'Password must be at least 6 characters';
-            isValid = false;
-        }
-
-        // Display errors
-        for (let key in errors) {
-            const errorElement = document.getElementById(key + 'Error');
-            if (errorElement) {
-                errorElement.textContent = errors[key];
-                errorElement.style.display = 'block';
-            }
-        }
-
-        if (isValid) {
-            localStorage.setItem('authToken', 'loggedin');
-            window.location.href = 'profile.html';
-        }
-
-        return isValid;
-    }
-</script>
 </body>
 </html>
