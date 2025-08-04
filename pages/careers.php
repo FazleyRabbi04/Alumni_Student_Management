@@ -211,7 +211,7 @@ if (isLoggedIn()) {
 <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-navy">
         <div class="container-fluid px-4">
-            <a class="navbar-brand" href="home.php">Alumni Relationship & Networking System</a>
+            <a class="navbar-brand" href="home.html">Alumni Relationship & Networking System</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
