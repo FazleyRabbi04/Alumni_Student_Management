@@ -328,6 +328,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             batchYearInput.style.display = 'none';
         }
     });
+    document.querySelector('form').addEventListener('submit', function () {
+    if (document.getElementById('user_type').value === 'student') {
+        document.getElementById('grad_batch_year').value = document.getElementById('batch_year').value;
+    } else {
+        document.getElementById('batch_year').value = document.getElementById('grad_batch_year').value;
+    }
+    });
 </script>
 </body>
 </html>
