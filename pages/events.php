@@ -2,10 +2,32 @@
 require_once '../config/database.php';
 startSecureSession();
 
-// If user is logged in, redirect to dashboard
-if (isLoggedIn()) {
-    header('Location: pages/dashboard.php');
-    exit();
+// Get events from database
+$events = [];
+try {
+    $query = "SELECT * FROM events ORDER BY event_date ASC";
+    $stmt = executeQuery($query);
+
+    if ($stmt) {
+        $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (Exception $e) {
+    // Handle database error silently, events will remain empty array
+    error_log("Error loading events: " . $e->getMessage());
+}
+
+// Separate events into upcoming and past
+$currentDate = new DateTime();
+$upcomingEvents = [];
+$pastEvents = [];
+
+foreach ($events as $event) {
+    $eventDate = new DateTime($event['date']);
+    if ($eventDate >= $currentDate) {
+        $upcomingEvents[] = $event;
+    } else {
+        $pastEvents[] = $event;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -147,13 +169,27 @@ if (isLoggedIn()) {
                     <li class="nav-item">
                         <a class="nav-link" href="careers.php">Careers</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="eventsDropdown" role="button" data-bs-toggle="dropdown">Register</a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="auth/signup.php">Sign Up</a></li>
-                            <li><a class="dropdown-item" href="auth/signin.php">Sign In</a></li>
-                        </ul>
-                    </li>
+                    <?php if (isLoggedIn()): ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="dashboard.php">Dashboard</a></li>
+                                <li><a class="dropdown-item" href="profile.php">My Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="../auth/logout.php">Logout</a></li>
+                            </ul>
+                        </li>
+                    <?php else: ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="eventsDropdown" role="button" data-bs-toggle="dropdown">Register</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="auth/signup.php">Sign Up</a></li>
+                                <li><a class="dropdown-item" href="auth/signin.php">Sign In</a></li>
+                            </ul>
+                        </li>
+                    <?php endif; ?>
                 </ul>
             </div>
         </div>
@@ -179,14 +215,57 @@ if (isLoggedIn()) {
             </li>
         </ul>
         <div class="tab-content" id="eventTabContent">
+            <!-- Upcoming Events Tab -->
             <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
-                <div class="row g-4" id="upcomingEvents" data-aos="fade-up" data-aos-delay="100">
-                    <!-- Events will be loaded dynamically -->
+                <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+                    <?php if (empty($upcomingEvents)): ?>
+                        <div class="col-12">
+                            <p class="text-center text-muted py-5">No upcoming events found.</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($upcomingEvents as $event): ?>
+                            <div class="col-md-6">
+                                <div class="event-card h-100">
+                                    <h5><?php echo htmlspecialchars($event['title']); ?></h5>
+                                    <p><strong>Date:</strong> <?php echo date('F j, Y', strtotime($event['date'])); ?></p>
+                                    <p><strong>Time:</strong> <?php echo htmlspecialchars($event['time']); ?></p>
+                                    <p><strong>Venue:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
+                                    <p><strong>Type:</strong> <?php echo htmlspecialchars($event['type']); ?></p>
+                                    <p><?php echo htmlspecialchars($event['description']); ?></p>
+                                    <?php if (isLoggedIn()): ?>
+                                        <a href="#" class="btn btn-primary">Register for Event</a>
+                                    <?php else: ?>
+                                        <a href="../auth/signin.php" class="btn btn-primary">Sign In to Register</a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
+
+            <!-- Past Events Tab -->
             <div class="tab-pane fade" id="past" role="tabpanel">
-                <div class="row g-4" id="pastEvents" data-aos="fade-up" data-aos-delay="100">
-                    <!-- Past events will be loaded dynamically -->
+                <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+                    <?php if (empty($pastEvents)): ?>
+                        <div class="col-12">
+                            <p class="text-center text-muted py-5">No past events found.</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($pastEvents as $event): ?>
+                            <div class="col-md-6">
+                                <div class="event-card h-100">
+                                    <h5><?php echo htmlspecialchars($event['title']); ?></h5>
+                                    <p><strong>Date:</strong> <?php echo date('F j, Y', strtotime($event['date'])); ?></p>
+                                    <p><strong>Time:</strong> <?php echo htmlspecialchars($event['time']); ?></p>
+                                    <p><strong>Venue:</strong> <?php echo htmlspecialchars($event['location']); ?></p>
+                                    <p><strong>Type:</strong> <?php echo htmlspecialchars($event['type']); ?></p>
+                                    <p><?php echo htmlspecialchars($event['description']); ?></p>
+                                    <a href="#" class="btn btn-secondary">View Details</a>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -219,73 +298,6 @@ if (isLoggedIn()) {
 <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 <script>
     AOS.init({ duration: 1000, once: true });
-
-    const apiUrl = 'http://localhost:8080/api/events';
-
-    function loadEvents() {
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(events => {
-                const upcomingEvents = document.getElementById('upcomingEvents');
-                const pastEvents = document.getElementById('pastEvents');
-                upcomingEvents.innerHTML = '';
-                pastEvents.innerHTML = '';
-
-                const currentDate = new Date();
-                const upcoming = events.filter(event => new Date(event.date) >= currentDate);
-                const past = events.filter(event => new Date(event.date) < currentDate);
-
-                if (!upcoming.length) {
-                    upcomingEvents.innerHTML = '<p class="text-center">No upcoming events found.</p>';
-                } else {
-                    upcoming.forEach(event => {
-                        const eventDate = new Date(event.date).toLocaleDateString();
-                        const card = document.createElement('div');
-                        card.className = 'col-md-6';
-                        card.innerHTML = `
-                            <div class="event-card h-100">
-                                <h5>${event.title}</h5>
-                                <p><strong>Date:</strong> ${eventDate}</p>
-                                <p><strong>Time:</strong> ${event.time}</p>
-                                <p><strong>Venue:</strong> ${event.location}</p>
-                                <p><strong>Type:</strong> ${event.type}</p>
-                                <p>${event.description}</p>
-                                <a href="#" class="btn btn-primary">Register for Event</a>
-                            </div>
-                        `;
-                        upcomingEvents.appendChild(card);
-                    });
-                }
-
-                if (!past.length) {
-                    pastEvents.innerHTML = '<p class="text-center">No past events found.</p>';
-                } else {
-                    past.forEach(event => {
-                        const eventDate = new Date(event.date).toLocaleDateString();
-                        const card = document.createElement('div');
-                        card.className = 'col-md-6';
-                        card.innerHTML = `
-                            <div class="event-card h-100">
-                                <h5>${event.title}</h5>
-                                <p><strong>Date:</strong> ${eventDate}</p>
-                                <p><strong>Time:</strong> ${event.time}</p>
-                                <p><strong>Venue:</strong> ${event.location}</p>
-                                <p><strong>Type:</strong> ${event.type}</p>
-                                <p>${event.description}</p>
-                                <a href="#" class="btn btn-secondary">View Details</a>
-                            </div>
-                        `;
-                        pastEvents.appendChild(card);
-                    });
-                }
-            })
-            .catch(err => {
-                console.error('Error loading events:', err);
-                document.getElementById('upcomingEvents').innerHTML = '<p class="text-center text-danger">Failed to load events.</p>';
-            });
-    }
-
-    window.addEventListener('load', loadEvents);
 </script>
 </body>
 </html>
