@@ -1,3 +1,4 @@
+```php
 <?php
 require_once '../config/database.php';
 requireLogin();
@@ -16,14 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_job'])) {
     if (!empty($job_title) && !empty($company) && !empty($location)) {
         $job_query = "INSERT INTO job (job_title, company, location, description, person_id) 
                       VALUES (?, ?, ?, ?, ?)";
-
         if (executeQuery($job_query, [$job_title, $company, $location, $description, $user_id])) {
             $job_id = getLastInsertId();
-
-            // Add to posts table
             $posts_query = "INSERT INTO posts (person_id, job_id) VALUES (?, ?)";
             executeQuery($posts_query, [$user_id, $job_id]);
-
             $message = 'Job posted successfully!';
         } else {
             $error = 'Failed to post job.';
@@ -33,18 +30,74 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_job'])) {
     }
 }
 
-// Get all jobs with poster information
+// Handle job editing
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_job'])) {
+    $job_id = $_POST['job_id'];
+    $job_title = trim($_POST['job_title']);
+    $company = trim($_POST['company']);
+    $location = trim($_POST['location']);
+    $description = trim($_POST['description']);
+
+    if (!empty($job_title) && !empty($company) && !empty($location)) {
+        // Verify user owns the job
+        $check_query = "SELECT person_id FROM job WHERE job_id = ? AND person_id = ?";
+        $check_stmt = executeQuery($check_query, [$job_id, $user_id]);
+        if ($check_stmt && $check_stmt->rowCount() > 0) {
+            $update_query = "UPDATE job SET job_title = ?, company = ?, location = ?, description = ? WHERE job_id = ?";
+            if (executeQuery($update_query, [$job_title, $company, $location, $description, $job_id])) {
+                $message = 'Job updated successfully!';
+            } else {
+                $error = 'Failed to update job.';
+            }
+        } else {
+            $error = 'Unauthorized: You can only edit your own jobs.';
+        }
+    } else {
+        $error = 'Please fill in all required fields.';
+    }
+}
+
+// Handle job deletion
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_job'])) {
+    $job_id = $_POST['job_id'];
+    // Verify user owns the job
+    $check_query = "SELECT person_id FROM job WHERE job_id = ? AND person_id = ?";
+    $check_stmt = executeQuery($check_query, [$job_id, $user_id]);
+    if ($check_stmt && $check_stmt->rowCount() > 0) {
+        // Delete associated posts first (due to foreign key constraints)
+        $delete_posts_query = "DELETE FROM posts WHERE job_id = ?";
+        if (executeQuery($delete_posts_query, [$job_id])) {
+            // Delete the job
+            $delete_job_query = "DELETE FROM job WHERE job_id = ?";
+            if (executeQuery($delete_job_query, [$job_id])) {
+                $message = 'Job deleted successfully!';
+            } else {
+                $error = 'Failed to delete job.';
+            }
+        } else {
+            $error = 'Failed to delete associated posts.';
+        }
+    } else {
+        $error = 'Unauthorized: You can only delete your own jobs.';
+    }
+}
+
+// Get all jobs with poster information and contact details
 $jobs_query = "SELECT j.*, p.first_name, p.last_name, p.department,
-               (SELECT COUNT(*) FROM posts po WHERE po.job_id = j.job_id) as applicant_count
+               (SELECT COUNT(*) FROM posts po WHERE po.job_id = j.job_id) as applicant_count,
+               (SELECT GROUP_CONCAT(email) FROM email_address e WHERE e.person_id = j.person_id) as emails,
+               (SELECT GROUP_CONCAT(phone_number) FROM person_phone ph WHERE ph.person_id = j.person_id) as phones
                FROM job j 
                JOIN person p ON j.person_id = p.person_id 
                ORDER BY j.post_date DESC";
 $jobs_stmt = executeQuery($jobs_query);
 $jobs = $jobs_stmt ? $jobs_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-// Get user's posted jobs
+// Get user's posted jobs with contact details
 $my_jobs_query = "SELECT j.*, 
-                  (SELECT COUNT(*) FROM posts po WHERE po.job_id = j.job_id AND po.person_id != j.person_id) as applicant_count
+                  (SELECT COUNT(*) FROM posts po WHERE po.job_id = j.job_id AND po.person_id != j.person_id) as applicant_count,
+                  (SELECT GROUP_CONCAT(email) FROM email_address e WHERE e.person_id = j.person_id) as emails,
+                  (SELECT GROUP_CONCAT(phone_number) FROM person_phone ph WHERE ph.person_id = j.person_id) as phones
                   FROM job j 
                   WHERE j.person_id = ? 
                   ORDER BY j.post_date DESC";
@@ -69,14 +122,28 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="../assets/css/custom.css" rel="stylesheet">
+    <style>
+        .contact-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .contact-list li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
 </head>
 <body>
-<?php include '../includes/navbar.php'; ?>
+<?php 
+if (file_exists('../includes/sidebar.php')) {
+    include '../includes/sidebar.php';
+} else {
+    echo '<div class="alert alert-danger">Error: Sidebar file not found. Please check the file path.</div>';
+}
+?>
 
 <div class="container-fluid">
     <div class="row">
-        <?php include '../includes/sidebar.php'; ?>
-
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2">
@@ -91,14 +158,14 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
 
             <?php if ($message): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i><?php echo $message; ?>
+                    <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($message); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
 
             <?php if ($error): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-circle me-2"></i><?php echo $error; ?>
+                    <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($error); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
@@ -227,10 +294,9 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                                     <h5 class="card-title mb-0"><?php echo htmlspecialchars($job['job_title']); ?></h5>
                                                     <span class="badge bg-primary">
-                                                            <?php echo date('M j', strtotime($job['post_date'])); ?>
-                                                        </span>
+                                                        <?php echo date('M j', strtotime($job['post_date'])); ?>
+                                                    </span>
                                                 </div>
-
                                                 <div class="mb-3">
                                                     <div class="d-flex align-items-center mb-2">
                                                         <i class="fas fa-building text-primary me-2"></i>
@@ -248,14 +314,12 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
-
                                                 <?php if ($job['description']): ?>
                                                     <p class="card-text">
                                                         <?php echo htmlspecialchars(substr($job['description'], 0, 150)); ?>
                                                         <?php if (strlen($job['description']) > 150): ?>...<?php endif; ?>
                                                     </p>
                                                 <?php endif; ?>
-
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <button type="button" class="btn btn-primary btn-sm"
                                                             data-bs-toggle="modal"
@@ -321,10 +385,17 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                                                             data-job='<?php echo json_encode($job); ?>'>
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    <button class="btn btn-outline-success" title="Edit Job">
+                                                    <button class="btn btn-outline-success" title="Edit Job"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#editJobModal"
+                                                            data-job='<?php echo json_encode($job); ?>'>
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button class="btn btn-outline-danger" title="Delete Job">
+                                                    <button class="btn btn-outline-danger" title="Delete Job"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#deleteJobModal"
+                                                            data-job-id="<?php echo $job['job_id']; ?>"
+                                                            data-job-title="<?php echo htmlspecialchars($job['job_title']); ?>">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
@@ -362,12 +433,10 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                             <input type="text" class="form-control" name="company" required>
                         </div>
                     </div>
-
                     <div class="mb-3">
                         <label for="location" class="form-label">Location *</label>
                         <input type="text" class="form-control" name="location" required>
                     </div>
-
                     <div class="mb-3">
                         <label for="description" class="form-label">Job Description</label>
                         <textarea class="form-control" name="description" rows="5"
@@ -377,6 +446,68 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" name="post_job" class="btn btn-primary">Post Job</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Job Modal -->
+<div class="modal fade" id="editJobModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Job</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="job_id" id="editJobId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_job_title" class="form-label">Job Title *</label>
+                            <input type="text" class="form-control" name="job_title" id="edit_job_title" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_company" class="form-label">Company *</label>
+                            <input type="text" class="form-control" name="company" id="edit_company" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_location" class="form-label">Location *</label>
+                        <input type="text" class="form-control" name="location" id="edit_location" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Job Description</label>
+                        <textarea class="form-control" name="description" id="edit_description" rows="5"
+                                  placeholder="Describe the job role, requirements, benefits, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="edit_job" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Job Confirmation Modal -->
+<div class="modal fade" id="deleteJobModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete Job</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="job_id" id="deleteJobId">
+                    <p>Are you sure you want to delete the job "<span id="deleteJobTitle"></span>"? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="delete_job" class="btn btn-danger">Delete Job</button>
                 </div>
             </form>
         </div>
@@ -402,7 +533,6 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                         <p id="jobDetailLocation"></p>
                     </div>
                 </div>
-
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <strong><i class="fas fa-user me-2"></i>Posted by:</strong>
@@ -413,7 +543,16 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                         <p id="jobDetailDate"></p>
                     </div>
                 </div>
-
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong><i class="fas fa-envelope me-2"></i>Contact Emails:</strong>
+                        <ul class="contact-list" id="jobDetailEmails"></ul>
+                    </div>
+                    <div class="col-md-6">
+                        <strong><i class="fas fa-phone me-2"></i>Contact Phones:</strong>
+                        <ul class="contact-list" id="jobDetailPhones"></ul>
+                    </div>
+                </div>
                 <div class="mb-3">
                     <strong><i class="fas fa-align-left me-2"></i>Description:</strong>
                     <div id="jobDetailDescription" class="mt-2"></div>
@@ -432,9 +571,6 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
 <?php include '../includes/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/js/custom.js"></script>
-<script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../assets/js/custom.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -482,8 +618,66 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
             document.getElementById('jobDetailPoster').textContent = jobData.first_name + ' ' + jobData.last_name;
             document.getElementById('jobDetailDate').textContent = new Date(jobData.post_date).toLocaleDateString();
 
+            // Handle emails
+            const emailList = document.getElementById('jobDetailEmails');
+            emailList.innerHTML = '';
+            if (jobData.emails) {
+                const emails = jobData.emails.split(',');
+                emails.forEach(email => {
+                    const li = document.createElement('li');
+                    li.textContent = email;
+                    emailList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No emails provided';
+                li.classList.add('text-muted');
+                emailList.appendChild(li);
+            }
+
+            // Handle phones
+            const phoneList = document.getElementById('jobDetailPhones');
+            phoneList.innerHTML = '';
+            if (jobData.phones) {
+                const phones = jobData.phones.split(',');
+                phones.forEach(phone => {
+                    const li = document.createElement('li');
+                    li.textContent = phone;
+                    phoneList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No phone numbers provided';
+                li.classList.add('text-muted');
+                phoneList.appendChild(li);
+            }
+
             const description = jobData.description || 'No description provided.';
             document.getElementById('jobDetailDescription').innerHTML = description.replace(/\n/g, '<br>');
+        });
+
+        // Edit job modal
+        const editJobModal = document.getElementById('editJobModal');
+        editJobModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const jobData = JSON.parse(button.getAttribute('data-job'));
+
+            document.getElementById('editJobId').value = jobData.job_id;
+            document.getElementById('edit_job_title').value = jobData.job_title;
+            document.getElementById('edit_company').value = jobData.company;
+            document.getElementById('edit_location').value = jobData.location;
+            document.getElementById('edit_description').value = jobData.description || '';
+        });
+
+        // Delete job modal
+        const deleteJobModal = document.getElementById('deleteJobModal');
+        deleteJobModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const jobId = button.getAttribute('data-job-id');
+            const jobTitle = button.getAttribute('data-job-title');
+
+            document.getElementById('deleteJobId').value = jobId;
+            document.getElementById('deleteJobTitle').textContent = jobTitle;
         });
 
         // Animate counters in statistics cards
@@ -509,3 +703,4 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
 </script>
 </body>
 </html>
+```
