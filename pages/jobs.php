@@ -1,4 +1,3 @@
-```php
 <?php
 require_once '../config/database.php';
 requireLogin();
@@ -82,22 +81,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_job'])) {
     }
 }
 
-// Get all jobs with poster information and contact details
+// Get all jobs with poster information
 $jobs_query = "SELECT j.*, p.first_name, p.last_name, p.department,
-               (SELECT COUNT(*) FROM posts po WHERE po.job_id = j.job_id) as applicant_count,
-               (SELECT GROUP_CONCAT(email) FROM email_address e WHERE e.person_id = j.person_id) as emails,
-               (SELECT GROUP_CONCAT(phone_number) FROM person_phone ph WHERE ph.person_id = j.person_id) as phones
+               (SELECT COUNT(*) FROM posts po WHERE po.job_id = j.job_id) as applicant_count
                FROM job j 
                JOIN person p ON j.person_id = p.person_id 
                ORDER BY j.post_date DESC";
 $jobs_stmt = executeQuery($jobs_query);
 $jobs = $jobs_stmt ? $jobs_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-// Get user's posted jobs with contact details
+// Get user's posted jobs
 $my_jobs_query = "SELECT j.*, 
-                  (SELECT COUNT(*) FROM posts po WHERE po.job_id = j.job_id AND po.person_id != j.person_id) as applicant_count,
-                  (SELECT GROUP_CONCAT(email) FROM email_address e WHERE e.person_id = j.person_id) as emails,
-                  (SELECT GROUP_CONCAT(phone_number) FROM person_phone ph WHERE ph.person_id = j.person_id) as phones
+                  (SELECT COUNT(*) FROM posts po WHERE po.job_id = j.job_id AND po.person_id != j.person_id) as applicant_count
                   FROM job j 
                   WHERE j.person_id = ? 
                   ORDER BY j.post_date DESC";
@@ -122,28 +117,14 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="../assets/css/custom.css" rel="stylesheet">
-    <style>
-        .contact-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .contact-list li {
-            margin-bottom: 0.5rem;
-        }
-    </style>
 </head>
 <body>
-<?php 
-if (file_exists('../includes/sidebar.php')) {
-    include '../includes/sidebar.php';
-} else {
-    echo '<div class="alert alert-danger">Error: Sidebar file not found. Please check the file path.</div>';
-}
-?>
+<?php include '../includes/navbar.php'; ?>
 
 <div class="container-fluid">
     <div class="row">
+        <?php include '../includes/sidebar.php'; ?>
+
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2">
@@ -158,14 +139,14 @@ if (file_exists('../includes/sidebar.php')) {
 
             <?php if ($message): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($message); ?>
+                    <i class="fas fa-check-circle me-2"></i><?php echo $message; ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
 
             <?php if ($error): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($error); ?>
+                    <i class="fas fa-exclamation-circle me-2"></i><?php echo $error; ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
@@ -543,16 +524,6 @@ if (file_exists('../includes/sidebar.php')) {
                         <p id="jobDetailDate"></p>
                     </div>
                 </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <strong><i class="fas fa-envelope me-2"></i>Contact Emails:</strong>
-                        <ul class="contact-list" id="jobDetailEmails"></ul>
-                    </div>
-                    <div class="col-md-6">
-                        <strong><i class="fas fa-phone me-2"></i>Contact Phones:</strong>
-                        <ul class="contact-list" id="jobDetailPhones"></ul>
-                    </div>
-                </div>
                 <div class="mb-3">
                     <strong><i class="fas fa-align-left me-2"></i>Description:</strong>
                     <div id="jobDetailDescription" class="mt-2"></div>
@@ -618,40 +589,6 @@ if (file_exists('../includes/sidebar.php')) {
             document.getElementById('jobDetailPoster').textContent = jobData.first_name + ' ' + jobData.last_name;
             document.getElementById('jobDetailDate').textContent = new Date(jobData.post_date).toLocaleDateString();
 
-            // Handle emails
-            const emailList = document.getElementById('jobDetailEmails');
-            emailList.innerHTML = '';
-            if (jobData.emails) {
-                const emails = jobData.emails.split(',');
-                emails.forEach(email => {
-                    const li = document.createElement('li');
-                    li.textContent = email;
-                    emailList.appendChild(li);
-                });
-            } else {
-                const li = document.createElement('li');
-                li.textContent = 'No emails provided';
-                li.classList.add('text-muted');
-                emailList.appendChild(li);
-            }
-
-            // Handle phones
-            const phoneList = document.getElementById('jobDetailPhones');
-            phoneList.innerHTML = '';
-            if (jobData.phones) {
-                const phones = jobData.phones.split(',');
-                phones.forEach(phone => {
-                    const li = document.createElement('li');
-                    li.textContent = phone;
-                    phoneList.appendChild(li);
-                });
-            } else {
-                const li = document.createElement('li');
-                li.textContent = 'No phone numbers provided';
-                li.classList.add('text-muted');
-                phoneList.appendChild(li);
-            }
-
             const description = jobData.description || 'No description provided.';
             document.getElementById('jobDetailDescription').innerHTML = description.replace(/\n/g, '<br>');
         });
@@ -703,4 +640,3 @@ if (file_exists('../includes/sidebar.php')) {
 </script>
 </body>
 </html>
-```
