@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $ach_date = $_POST['ach_date'];
             $organization = trim($_POST['organization']);
             $description = trim($_POST['description']);
-            $type = $_POST['ach_type'];
+            $type = $_POST['type'];
             
             if (!empty($ach_title) && !empty($ach_date)) {
                 try {
@@ -130,6 +130,56 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 $error = 'Please fill in all required achievement fields.';
             }
+        } elseif ($_POST['action'] == 'add_email') {
+            // Add secondary email
+            $new_email = trim($_POST['new_email']);
+            if (!empty($new_email) && filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
+                try {
+                    // Check if email already exists
+                    $check_query = "SELECT email FROM email_address WHERE email = ?";
+                    $check_stmt = executeQuery($check_query, [$new_email]);
+                    if ($check_stmt && $check_stmt->rowCount() > 0) {
+                        $error = 'This email is already in use.';
+                    } else {
+                        $email_query = "INSERT INTO email_address (person_id, email) VALUES (?, ?)";
+                        $email_stmt = executeQuery($email_query, [$user_id, $new_email]);
+                        if ($email_stmt) {
+                            $success = 'Email added successfully!';
+                        } else {
+                            $error = 'Failed to add email.';
+                        }
+                    }
+                } catch (Exception $e) {
+                    $error = 'Error adding email: ' . $e->getMessage();
+                }
+            } else {
+                $error = 'Please provide a valid email address.';
+            }
+        } elseif ($_POST['action'] == 'add_phone') {
+            // Add secondary phone
+            $new_phone = trim($_POST['new_phone']);
+            if (!empty($new_phone) && preg_match('/^[0-9+\-\s]{10,15}$/', $new_phone)) {
+                try {
+                    // Check if phone already exists
+                    $check_query = "SELECT phone_number FROM person_phone WHERE phone_number = ?";
+                    $check_stmt = executeQuery($check_query, [$new_phone]);
+                    if ($check_stmt && $check_stmt->rowCount() > 0) {
+                        $error = 'This phone number is already in use.';
+                    } else {
+                        $phone_query = "INSERT INTO person_phone (person_id, phone_number) VALUES (?, ?)";
+                        $phone_stmt = executeQuery($phone_query, [$user_id, $new_phone]);
+                        if ($phone_stmt) {
+                            $success = 'Phone number added successfully!';
+                        } else {
+                            $error = 'Failed to add phone number.';
+                        }
+                    }
+                } catch (Exception $e) {
+                    $error = 'Error adding phone: ' . $e->getMessage();
+                }
+            } else {
+                $error = 'Please provide a valid phone number (10-15 digits, +, -, or spaces).';
+            }
         }
     }
 }
@@ -140,22 +190,23 @@ if (!$user_info) {
     $error = 'Unable to load user profile.';
 }
 
-// Get user email and phone
-$email = '';
-$phone = '';
+// Get all user emails
+$emails = [];
 if ($user_info) {
-    $email_query = "SELECT email FROM email_address WHERE person_id = ? LIMIT 1";
+    $email_query = "SELECT email FROM email_address WHERE person_id = ?";
     $email_stmt = executeQuery($email_query, [$user_id]);
-    if ($email_stmt && $email_stmt->rowCount() > 0) {
-        $email_result = $email_stmt->fetch();
-        $email = $email_result['email'];
+    if ($email_stmt) {
+        $emails = $email_stmt->fetchAll(PDO::FETCH_COLUMN);
     }
-    
-    $phone_query = "SELECT phone_number FROM person_phone WHERE person_id = ? LIMIT 1";
+}
+
+// Get all user phone numbers
+$phones = [];
+if ($user_info) {
+    $phone_query = "SELECT phone_number FROM person_phone WHERE person_id = ?";
     $phone_stmt = executeQuery($phone_query, [$user_id]);
-    if ($phone_stmt && $phone_stmt->rowCount() > 0) {
-        $phone_result = $phone_stmt->fetch();
-        $phone = $phone_result['phone_number'];
+    if ($phone_stmt) {
+        $phones = $phone_stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 }
 
@@ -267,6 +318,13 @@ if ($user_info) {
             margin-top: 1rem;
             background-color: #f8f9ff;
         }
+        .contact-list {
+            list-style: none;
+            padding: 0;
+        }
+        .contact-list li {
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -321,8 +379,18 @@ if ($user_info) {
             <!-- Personal Information -->
             <div class="col-lg-8">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
+                        <?php if ($edit_mode): ?>
+                            <div>
+                                <button class="btn btn-sm btn-light me-2" data-bs-toggle="modal" data-bs-target="#addEmailModal">
+                                    <i class="fas fa-plus me-1"></i>Add Email
+                                </button>
+                                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addPhoneModal">
+                                    <i class="fas fa-plus me-1"></i>Add Phone
+                                </button>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="card-body">
                         <?php if ($edit_mode): ?>
@@ -378,19 +446,27 @@ if ($user_info) {
                                     </div>
                                 </div>
                                 <hr>
-                                <h6 class="text-muted mb-3">Read-Only Information</h6>
+                                <h6 class="text-muted mb-3">Contact Information</h6>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Email</label>
-                                        <input type="email" class="form-control readonly-field" 
-                                               value="<?php echo htmlspecialchars($email); ?>" readonly>
-                                        <small class="text-muted">Email cannot be changed</small>
+                                        <label class="form-label">Emails</label>
+                                        <ul class="contact-list">
+                                            <?php foreach ($emails as $email): ?>
+                                                <li><input type="email" class="form-control readonly-field mb-1" 
+                                                           value="<?php echo htmlspecialchars($email); ?>" readonly></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                        <small class="text-muted">Use the "Add Email" button to add more emails</small>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Phone</label>
-                                        <input type="text" class="form-control readonly-field" 
-                                               value="<?php echo htmlspecialchars($phone); ?>" readonly>
-                                        <small class="text-muted">Phone cannot be changed</small>
+                                        <label class="form-label">Phone Numbers</label>
+                                        <ul class="contact-list">
+                                            <?php foreach ($phones as $phone): ?>
+                                                <li><input type="text" class="form-control readonly-field mb-1" 
+                                                           value="<?php echo htmlspecialchars($phone); ?>" readonly></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                        <small class="text-muted">Use the "Add Phone" button to add more numbers</small>
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -411,12 +487,28 @@ if ($user_info) {
                         <?php else: ?>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <strong>Email:</strong><br>
-                                    <span class="text-muted"><?php echo htmlspecialchars($email); ?></span>
+                                    <strong>Emails:</strong><br>
+                                    <ul class="contact-list">
+                                        <?php if (empty($emails)): ?>
+                                            <li class="text-muted">No emails added</li>
+                                        <?php else: ?>
+                                            <?php foreach ($emails as $email): ?>
+                                                <li class="text-muted"><?php echo htmlspecialchars($email); ?></li>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </ul>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <strong>Phone:</strong><br>
-                                    <span class="text-muted"><?php echo htmlspecialchars($phone); ?></span>
+                                    <strong>Phone Numbers:</strong><br>
+                                    <ul class="contact-list">
+                                        <?php if (empty($phones)): ?>
+                                            <li class="text-muted">No phone numbers added</li>
+                                        <?php else: ?>
+                                            <?php foreach ($phones as $phone): ?>
+                                                <li class="text-muted"><?php echo htmlspecialchars($phone); ?></li>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </ul>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <strong>NID:</strong><br>
@@ -562,6 +654,14 @@ if ($user_info) {
                             <span>Achievements:</span>
                             <span class="badge bg-warning"><?php echo count($achievements); ?></span>
                         </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Emails:</span>
+                            <span class="badge bg-info"><?php echo count($emails); ?></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Phone Numbers:</span>
+                            <span class="badge bg-info"><?php echo count($phones); ?></span>
+                        </div>
                         <hr>
                         <small class="text-muted">
                             <i class="fas fa-info-circle me-1"></i>
@@ -607,6 +707,60 @@ if ($user_info) {
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Verify & Edit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Email Modal -->
+    <div class="modal fade" id="addEmailModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-envelope me-2"></i>Add Secondary Email</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="add_email">
+                        <div class="mb-3">
+                            <label for="new_email" class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="new_email" name="new_email" required
+                                   placeholder="e.g., example@domain.com">
+                            <small class="text-muted">Enter a valid email address</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Email</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Phone Modal -->
+    <div class="modal fade" id="addPhoneModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-phone me-2"></i>Add Secondary Phone</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="add_phone">
+                        <div class="mb-3">
+                            <label for="new_phone" class="form-label">Phone Number *</label>
+                            <input type="text" class="form-control" id="new_phone" name="new_phone" required
+                                   placeholder="e.g., +1234567890">
+                            <small class="text-muted">Use 10-15 digits, may include +, -, or spaces</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Phone</button>
                     </div>
                 </form>
             </div>
