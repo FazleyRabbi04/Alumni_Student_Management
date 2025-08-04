@@ -1,5 +1,5 @@
 <?php
-class database
+class Database
 {
     private $host = 'localhost';
     private $db_name = 'alumninetworking';
@@ -68,5 +68,59 @@ function getUserInfo($user_id) {
               WHERE p.person_id = ?";
     $stmt = executeQuery($query, [$user_id]);
     return $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+}
+
+// Authentication function - THIS WAS MISSING
+function authenticateUser($email, $password) {
+    try {
+        // First, get the person_id from email_address table
+        $email_query = "SELECT person_id FROM email_address WHERE email = ?";
+        $email_stmt = executeQuery($email_query, [$email]);
+        
+        if (!$email_stmt || $email_stmt->rowCount() == 0) {
+            return false;
+        }
+        
+        $email_result = $email_stmt->fetch(PDO::FETCH_ASSOC);
+        $person_id = $email_result['person_id'];
+        
+        // Now get the user info including password
+        $user_query = "SELECT * FROM person WHERE person_id = ?";
+        $user_stmt = executeQuery($user_query, [$person_id]);
+        
+        if (!$user_stmt || $user_stmt->rowCount() == 0) {
+            return false;
+        }
+        
+        $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Verify password
+        if (password_verify($password, $user['password'])) {
+            return $user;
+        }
+        
+        return false;
+    } catch (Exception $e) {
+        error_log("Authentication error: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Additional helper functions
+function sanitizeInput($input) {
+    return htmlspecialchars(strip_tags(trim($input)));
+}
+
+function generateRandomString($length = 10) {
+    return bin2hex(random_bytes($length / 2));
+}
+
+function logActivity($user_id, $activity, $details = '') {
+    try {
+        $query = "INSERT INTO activity_log (user_id, activity, details, created_at) VALUES (?, ?, ?, NOW())";
+        executeQuery($query, [$user_id, $activity, $details]);
+    } catch (Exception $e) {
+        error_log("Activity logging error: " . $e->getMessage());
+    }
 }
 ?>
