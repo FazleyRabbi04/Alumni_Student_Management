@@ -2,17 +2,23 @@
 require_once '../config/database.php';
 startSecureSession();
 
-// Helper to check login
-function isLoggedIn() {
-    return isset($_SESSION['user_id']);
+global $conn; // Ensure $conn is globally available
+
+// Only define if not already declared
+if (!function_exists('isLoggedIn')) {
+    function isLoggedIn() {
+        return isset($_SESSION['user_id']);
+    }
 }
 
-// Helper to check if user is alumni
-function isAlumni($id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT 1 FROM alumni WHERE person_id = ?");
-    $stmt->execute([$id]);
-    return $stmt->fetchColumn();
+// Only define if not already declared
+if (!function_exists('isAlumni')) {
+    function isAlumni($id) {
+        global $conn;
+        $stmt = $conn->prepare("SELECT 1 FROM alumni WHERE person_id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetchColumn();
+    }
 }
 
 // Add Event (for alumni only)
