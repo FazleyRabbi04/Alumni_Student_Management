@@ -1,33 +1,26 @@
 <?php
-session_start();
-include '../navbar.php';
-include '../sidebar.php';
-include '../database.php';
+require_once '../config/database.php';
+startSecureSession();
 
-// Simple helper to run parameterized queries
-function executeQuery($query, $params = []) {
+// Helper to check login
+function isLoggedIn() {
+    return isset($_SESSION['user_id']);
+}
+
+// Helper to check if user is alumni
+function isAlumni($id) {
     global $conn;
-    $stmt = $conn->prepare($query);
-    if ($params) {
-        $types = str_repeat('s', count($params)); // All strings for simplicity
-        $stmt->bind_param($types, ...$params);
-    }
-    $stmt->execute();
-    return $stmt;
+    $stmt = $conn->prepare("SELECT 1 FROM alumni WHERE person_id = ?");
+    $stmt->execute([$id]);
+    return $stmt->fetchColumn();
 }
 
-// Check if current user is alumni
-function isAlumni($user_id) {
-    $stmt = executeQuery("SELECT 1 FROM alumni WHERE person_id = ?", [$user_id]);
-    $stmt->store_result();
-    return $stmt->num_rows > 0;
-}
-
-// Handle Add Event
+// Add Event (for alumni only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_event']) && isAlumni($_SESSION['user_id'])) {
-    $query = "INSERT INTO events (event_title, event_date, city, venue, type, start_time, end_time)
-              VALUES (?, ?, ?, ?, ?, ?, ?)";
-    executeQuery($query, [
+    $sql = "INSERT INTO events (event_title, event_date, city, venue, type, start_time, end_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([
         $_POST['event_title'],
         $_POST['event_date'],
         $_POST['city'],
@@ -36,81 +29,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_event']) && isAlu
         $_POST['start_time'],
         $_POST['end_time']
     ]);
-    header("Location: events.php"); // Redirect to prevent resubmission
-    exit;
-}
-
-// Handle Delete Event
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_event']) && isAlumni($_SESSION['user_id'])) {
-    executeQuery("DELETE FROM events WHERE event_id = ?", [$_POST['event_id']]);
     header("Location: events.php");
     exit;
 }
+
+// Delete Event (for alumni only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_event']) && isAlumni($_SESSION['user_id'])) {
+    $stmt = $conn->prepare("DELETE FROM events WHERE event_id = ?");
+    $stmt->execute([$_POST['event_id']]);
+    header("Location: events.php");
+    exit;
+}
+
+// Get events
+$events = [];
+try {
+    $query = "SELECT * FROM events ORDER BY event_date ASC";
+    $stmt = $conn->query($query);
+    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    error_log("Error loading events: " . $e->getMessage());
+}
+
+$currentDate = new DateTime();
+$upcomingEvents = [];
+$pastEvents = [];
+foreach ($events as $event) {
+    $eventDate = new DateTime($event['event_date']);
+    if ($eventDate >= $currentDate) {
+        $upcomingEvents[] = $event;
+    } else {
+        $pastEvents[] = $event;
+    }
+}
 ?>
 
-<div class="main-content">
-    <div class="header">
-        <h2>Upcoming Events</h2>
-    </div>
-
-    <?php if (isAlumni($_SESSION['user_id'])): ?>
-    <div class="add-event-form">
-        <h3>Add New Event</h3>
-        <form method="POST" action="events.php">
-            <input type="text" name="event_title" required placeholder="Title"><br>
-            <input type="date" name="event_date" required><br>
-            <input type="text" name="city" required placeholder="City"><br>
-            <input type="text" name="venue" required placeholder="Venue"><br>
-            <select name="type" required>
-                <option value="">Select Type</option>
-                <option>Workshop</option>
-                <option>Seminar</option>
-                <option>Conference</option>
-                <option>Networking</option>
-                <option>Career Fair</option>
-                <option>Alumni Meet</option>
-            </select><br>
-            <input type="time" name="start_time" required><br>
-            <input type="time" name="end_time" required><br>
-            <button type="submit" name="add_event">Add Event</button>
+<!-- Include your existing HTML and styling from the previous version -->
+<!-- Insert the following inside the Upcoming Events tab after the heading -->
+<?php if (isAlumni($_SESSION['user_id'])): ?>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">Add New Event</div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" name="event_title" class="form-control" placeholder="Title" required>
+                </div>
+                <div class="col-md-6">
+                    <input type="date" name="event_date" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="city" class="form-control" placeholder="City" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="venue" class="form-control" placeholder="Venue" required>
+                </div>
+                <div class="col-md-4">
+                    <select name="type" class="form-select" required>
+                        <option value="">Select Type</option>
+                        <option>Workshop</option>
+                        <option>Seminar</option>
+                        <option>Conference</option>
+                        <option>Networking</option>
+                        <option>Career Fair</option>
+                        <option>Alumni Meet</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Start Time</label>
+                    <input type="time" name="start_time" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">End Time</label>
+                    <input type="time" name="end_time" class="form-control" required>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" name="add_event" class="btn btn-success">Add Event</button>
+            </div>
         </form>
     </div>
-    <?php endif; ?>
-
-    <div class="event-list">
-        <?php
-        $today = date('Y-m-d');
-        $query = "SELECT * FROM events WHERE event_date >= ? ORDER BY event_date ASC";
-        $stmt = executeQuery($query, [$today]);
-        $result = $stmt->get_result();
-
-        if ($result->num_rows > 0) {
-            while ($event = $result->fetch_assoc()) {
-        ?>
-                <div class="event-card">
-                    <h3><?php echo htmlspecialchars($event['event_title']); ?></h3>
-                    <p><strong>Date:</strong> <?php echo date('F j, Y', strtotime($event['event_date'])); ?></p>
-                    <p><strong>Time:</strong>
-                        <?php echo date('h:i A', strtotime($event['start_time'])) . ' - ' . date('h:i A', strtotime($event['end_time'])); ?>
-                    </p>
-                    <p><strong>City:</strong> <?php echo htmlspecialchars($event['city']); ?></p>
-                    <p><strong>Venue:</strong> <?php echo htmlspecialchars($event['venue']); ?></p>
-                    <p><strong>Type:</strong> <?php echo htmlspecialchars($event['type']); ?></p>
-
-                    <?php if (isAlumni($_SESSION['user_id'])): ?>
-                        <form method="POST" style="margin-top:10px;">
-                            <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
-                            <button type="submit" name="delete_event" onclick="return confirm('Delete this event?')">Delete</button>
-                        </form>
-                    <?php endif; ?>
-                </div>
-        <?php
-            }
-        } else {
-            echo "<p>No upcoming events found.</p>";
-        }
-        ?>
-    </div>
 </div>
+<?php endif; ?>
 
-<?php include 'footer.php'; ?>
+<!-- Add Delete buttons inside each upcoming event card for alumni -->
+<?php if (isAlumni($_SESSION['user_id'])): ?>
+<form method="POST" onsubmit="return confirm('Delete this event?')">
+    <input type="hidden" name="event_id" value="<?= $event['event_id'] ?>">
+    <button type="submit" name="delete_event" class="btn btn-outline-danger btn-sm mt-2">Delete</button>
+</form>
+<?php endif; ?>
