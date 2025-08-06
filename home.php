@@ -231,9 +231,35 @@ if (isLoggedIn()) {
 <section id="events" class="py-5">
     <div class="container">
         <h2 class="section-title text-center text-navy" data-aos="fade-up">Upcoming Events</h2>
-        <ul id="eventList" class="list-group" data-aos="fade-up" data-aos-delay="100">
-            <!-- Events will be loaded dynamically -->
-        </ul>
+        <?php
+require_once 'config/database.php';
+$database = new Database();
+$conn = $database->getConnection();
+
+$events = [];
+try {
+    $stmt = $conn->prepare("SELECT * FROM events WHERE event_date >= CURDATE() ORDER BY event_date ASC LIMIT 3");
+    $stmt->execute();
+    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    error_log("Error fetching events: " . $e->getMessage());
+}
+?>
+
+<ul class="list-group" data-aos="fade-up" data-aos-delay="100">
+    <?php if (empty($events)): ?>
+        <li class="list-group-item">No upcoming events found.</li>
+    <?php else: ?>
+        <?php foreach ($events as $event): ?>
+            <li class="list-group-item">
+                <strong><?= htmlspecialchars($event['event_title']) ?></strong><br>
+                <small><?= date('F j, Y', strtotime($event['event_date'])) ?> | <?= date('h:i A', strtotime($event['start_time'])) ?> - <?= date('h:i A', strtotime($event['end_time'])) ?></small><br>
+                <em><?= htmlspecialchars($event['venue']) ?>, <?= htmlspecialchars($event['city']) ?></em>
+            </li>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</ul>
+
     </div>
 </section>
 
@@ -264,7 +290,7 @@ if (isLoggedIn()) {
 <script>
     AOS.init({ duration: 1000, once: true });
 
-    const apiUrl = 'http://localhost:8080/api/events';
+    
 
     function loadEvents() {
         fetch(apiUrl)
