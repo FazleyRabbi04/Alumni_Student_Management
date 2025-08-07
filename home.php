@@ -115,20 +115,11 @@ if (isLoggedIn()) {
         }
 
         .footer {
-            background-color: #002147;
-            color: #fff;
-            padding: 40px 0;
-            font-size: 0.95rem;
-        }
-
-        .footer a {
-            color: #aad4ff;
-            text-decoration: none;
-            margin: 0 10px;
-            transition: color 0.3s;
-        }
-
-        .footer a:hover {
+            margin-top: auto;
+            background: #002147;
+            text-align: center;
+            padding: 25px 0;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
             color: #ffffff;
         }
     </style>
@@ -177,7 +168,7 @@ if (isLoggedIn()) {
         <div class="row row-cols-1 row-cols-md-3 g-4">
             <div class="col" data-aos="zoom-in">
                 <div class="feature-card h-100">
-                    <h5 class="card-title">Alumni Profiles</h5>
+                    <h5 class="card-title">Profiles</h5>
                     <p>Access detailed profiles including education, employment, and achievements.</p>
                 </div>
             </div>
@@ -251,21 +242,12 @@ try {
     </div>
 </section>
 
-<!-- Footer -->
-<footer class="footer text-center">
+<footer class="footer">
     <div class="container">
-        <div class="fw-bold fs-5 mb-2">Alumni Relationship & Networking System</div>
-        <div class="mb-3">
-            <a href="profile.php">Alumni Profiles</a>
-            <a href="events.php">Events</a>
-            <a href="mentorship.php">Mentorship</a>
-            <a href="careers.php">Careers</a>
-            <a href="terms.php">Terms</a>
-            <a href="privacy.php">Privacy</a>
-        </div>
-        <p class="small mb-0">&copy; 2025 ABC University. All rights reserved.</p>
+        &copy; 2025 ABC University. All rights reserved.
     </div>
 </footer>
+
 
 <!-- JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

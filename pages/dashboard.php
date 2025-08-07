@@ -133,13 +133,6 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                 <h1 class="h2 text-center w-100">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                 </h1>
-                <div class="btn-toolbar mb-2 mb-md-0">
-                    <div class="btn-group me-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary">
-                            <i class="fas fa-download me-1"></i>Export
-                        </button>
-                    </div>
-                </div>
             </div>
 
             <!-- Welcome Message -->

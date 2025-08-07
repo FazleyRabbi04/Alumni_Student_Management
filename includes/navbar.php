@@ -1,3 +1,4 @@
+<?php include 'sidebar.php'; ?>
 <?php
 if (!isset($_SESSION)) {
     session_start();
@@ -23,7 +24,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             background-color: #002147;
         }
         .navbar.bg-primary {
-            background: linear-gradient(to right, #002147, #0077c8) !important;
+            background: #002147 !important;
         }
         .navbar-brand, .nav-link, .dropdown-item {
             color: white !important;
