@@ -53,10 +53,47 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Alumni Network</title>
+    <title>Dashboard - Alumni Relationship & Networking System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
     <link href="../assets/css/custom.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #faf5f6;
+            color: #002147;
+        }
+        .bg-navy {
+            background-color: #002147;
+        }
+        .dashboard-card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .dashboard-card.success .card-body {
+            background: linear-gradient(to right, #28a745, #71dd8a);
+            color: white;
+        }
+        .dashboard-card.warning .card-body {
+            background: linear-gradient(to right, #ffc107, #ffda6a);
+            color: #333;
+        }
+        .dashboard-card.info .card-body {
+            background: linear-gradient(to right, #17a2b8, #5bc0de);
+            color: white;
+        }
+        .action-link {
+            color: #003087;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+        .action-link:hover {
+            color: #002147;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
 <?php include '../includes/navbar.php'; ?>
@@ -200,8 +237,8 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                                                 </small>
                                             </div>
                                             <span class="badge bg-<?php echo $event['status'] == 'Confirmed' ? 'success' : 'warning'; ?> rounded-pill">
-                                                    <?php echo $event['status']; ?>
-                                                </span>
+                                                <?php echo $event['status']; ?>
+                                            </span>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>

@@ -7,7 +7,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
     <div class="container-fluid">
         <a class="navbar-brand" href="../pages/dashboard.php">
-            <i class="fas fa-graduation-cap me-2"></i>Alumni Network
+            <i class="fas fa-graduation-cap me-2"></i>Alumni Relationship & Networking System
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
