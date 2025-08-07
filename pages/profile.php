@@ -14,7 +14,7 @@ $error = '';
 $success = '';
 $edit_mode = $_SESSION['edit_mode'] ?? false;
 
-// Get user information
+// Get user informations
 $user_info = getUserInfo($user_id);
 if (!$user_info) {
     $error = 'Unable to load user profile.';
