@@ -28,7 +28,7 @@ if (isLoggedIn()) {
     <style>
         body {
             font-family: 'Open Sans', sans-serif;
-            background-color: #f5f7fa;
+            background-color: #faf5f6;
             color: #002147;
         }
 

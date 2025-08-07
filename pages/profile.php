@@ -86,11 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $batch_stmt = executeQuery("SELECT batch_year FROM student WHERE person_id = ?", [$user_id]);
                                 $batch_year = ($batch_stmt && $batch_stmt->rowCount() > 0) ? $batch_stmt->fetchColumn() : null;
 
-
                                 $input_grad_year = $_POST['grad_year'] ?? '';
 
-                                if (!preg_match('/^\d{4}$/', $input_grad_year) || $input_grad_year > date('Y') || $input_grad_year < 1950)
-                                {
+                                if (!preg_match('/^\d{4}$/', $input_grad_year) || $input_grad_year > date('Y') || $input_grad_year < 1950) {
                                     $error = 'Please enter a valid graduation year.';
                                 } else {
                                     // Proceed with shifting
@@ -110,11 +108,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         $error .= ' Profile updated, but failed to shift role.';
                                     }
                                 }
-                            }catch (Exception $e) {
+                            } catch (Exception $e) {
                                 $error .= ' Error while shifting role: ' . $e->getMessage();
                             }
                         }
-
                     } else {
                         $error = 'Failed to update profile. Please try again.';
                     }
@@ -315,9 +312,12 @@ if ($user_info) {
     <title>My Profile - Alumni Relationship & Networking System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #faf5f6;
+            color: #002147;
         }
         .profile-header {
             background: linear-gradient(to right, #002147, #0077c8);
@@ -388,6 +388,9 @@ if ($user_info) {
             color: #002147;
             text-decoration: underline;
         }
+        .bg-navy {
+            background-color: #002147;
+        }
     </style>
 </head>
 <body>
@@ -415,8 +418,8 @@ if ($user_info) {
                     </button>
                 <?php else: ?>
                     <span class="badge bg-success fs-6">
-                            <i class="fas fa-check me-1"></i>Edit Mode Active
-                        </span>
+                        <i class="fas fa-check me-1"></i>Edit Mode Active
+                    </span>
                     <a href="profile.php?cancel_edit=1" class="btn btn-outline-danger mt-2">
                         <i class="fas fa-times-circle me-1"></i>Exit Edit Mode
                     </a>
