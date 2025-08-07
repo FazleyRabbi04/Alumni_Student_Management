@@ -131,17 +131,6 @@ if (isLoggedIn()) {
         .footer a:hover {
             color: #ffffff;
         }
-        .social-icons img {
-            margin: 0 6px;
-            width: 24px;
-            height: 24px;
-            filter: grayscale(100%);
-            transition: filter 0.3s;
-        }
-
-        .social-icons img:hover {
-            filter: grayscale(0%);
-        }
     </style>
 </head>
 <body>
@@ -273,11 +262,6 @@ try {
             <a href="careers.php">Careers</a>
             <a href="terms.php">Terms</a>
             <a href="privacy.php">Privacy</a>
-        </div>
-        <div class="social-icons mb-2">
-            <a href="#"><img src="https://via.placeholder.com/24/facebook.png" alt="Facebook" /></a>
-            <a href="#"><img src="https://via.placeholder.com/24/twitter.png" alt="Twitter" /></a>
-            <a href="#"><img src="https://via.placeholder.com/24/linkedin.png" alt="LinkedIn" /></a>
         </div>
         <p class="small mb-0">&copy; 2025 ABC University. All rights reserved.</p>
     </div>
