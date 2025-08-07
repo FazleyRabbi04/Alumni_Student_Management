@@ -271,7 +271,7 @@ foreach ($events as $event) {
     <title>Events - Alumni Relationship & Networking System</title>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&family=Roboto:wght@500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -281,81 +281,31 @@ foreach ($events as $event) {
 
     <style>
         body {
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Poppins', sans-serif;
             background-color: #f5f7fa;
             color: #002147;
         }
-        .bg-navy {
-            background-color: #002147;
-        }
-        .text-navy {
-            color: #002147;
-        }
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.5rem;
-            letter-spacing: 0.5px;
-        }
-        .nav-link {
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-        .nav-link:hover {
-            color: #aad4ff !important;
-        }
         .hero {
-            background: linear-gradient(to right, #002147, #0077c8);
+            background: linear-gradient(90deg, #3484ff 0%, #3fcfff 100%);
             color: #fff;
-            padding: 60px 20px;
+            padding: 60px 20px 30px 20px;
             text-align: center;
-            position: relative;
         }
         .hero h1 {
             font-weight: 700;
-            font-size: 2.75rem;
-        }
-        h2.section-title {
-            font-weight: 700;
-            font-family: 'Roboto', sans-serif;
-            font-size: 2rem;
-            margin-bottom: 2rem;
+            font-size: 2.5rem;
         }
         .event-card {
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            background-color: #ffffff;
-            padding: 24px;
-            transition: all 0.3s ease;
+            border-radius: 14px;
+            background-color: #fff;
+            padding: 28px 24px;
+            transition: all 0.28s cubic-bezier(.4,0,.2,1);
             height: 100%;
         }
         .event-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-        }
-        .footer {
-            background-color: #002147;
-            color: #fff;
-            padding: 40px 0;
-            font-size: 0.95rem;
-        }
-        .footer a {
-            color: #aad4ff;
-            text-decoration: none;
-            margin: 0 10px;
-            transition: color 0.3s;
-        }
-        .footer a:hover {
-            color: #ffffff;
-        }
-        .social-icons img {
-            margin: 0 6px;
-            width: 24px;
-            height: 24px;
-            filter: grayscale(100%);
-            transition: filter 0.3s;
-        }
-        .social-icons img:hover {
-            filter: grayscale(0%);
+            box-shadow: 0 12px 30px rgba(52, 132, 255, 0.11);
+            transform: translateY(-3px) scale(1.015);
         }
         .filter-form {
             margin-bottom: 2rem;
@@ -380,65 +330,15 @@ foreach ($events as $event) {
     </style>
 </head>
 <body>
-<!-- Header -->
-<header>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-navy">
-        <div class="container-fluid px-4">
-            <a class="navbar-brand" href="home.php">Alumni Relationship & Networking System</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="home.php">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="profile.php">Alumni Profiles</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="events.php">Events</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="mentorship.php">Mentorship</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="careers.php">Careers</a>
-                   wiggle
-                    </li>
-                    <?php if (isLoggedIn()): ?>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                <?php echo htmlspecialchars($_SESSION['user_name']); ?>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="dashboard.php">Dashboard</a></li>
-                                <li><a class="dropdown-item" href="profile.php">My Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="../auth/logout.php">Logout</a></li>
-                            </ul>
-                        </li>
-                    <?php else: ?>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="eventsDropdown" role="button" data-bs-toggle="dropdown">Register</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="auth/signup.php">Sign Up</a></li>
-                                <li><a class="dropdown-item" href="auth/signin.php">Sign In</a></li>
-                            </ul>
-                        </li>
-                    <?php endif; ?>
-                </ul>
-            </div>
-        </div>
-    </nav>
-</header>
+
+<?php include '..\includes\navbar.php'; ?>
 
 <!-- Hero Section -->
 <section class="hero" data-aos="fade-up">
     <div class="container">
-        <h1 class="display-4">Events</h1>
+        <h1 class="display-5">Events</h1>
         <?php if (isLoggedIn() && isAlumni($_SESSION['user_id'])): ?>
-            <button class="btn btn-light mt-3" data-bs-toggle="modal" data-bs-target="#addEventModal">Add New Event</button>
+            <button class="btn btn-light mt-3 shadow" data-bs-toggle="modal" data-bs-target="#addEventModal">Add New Event</button>
         <?php endif; ?>
     </div>
 </section>
@@ -688,7 +588,7 @@ foreach ($events as $event) {
 </div>
 
 <!-- Footer -->
-<footer class="footer text-center">
+<footer class="footer text-center mt-4 py-4 bg-white border-top">
     <div class="container">
         <div class="fw-bold fs-5 mb-2">Alumni Relationship & Networking System</div>
         <div class="mb-3">
@@ -699,12 +599,7 @@ foreach ($events as $event) {
             <a href="terms.php">Terms</a>
             <a href="privacy.php">Privacy</a>
         </div>
-        <div class="social-icons mb-2">
-            <a href="#"><img src="https://via.placeholder.com/24/facebook.png" alt="Facebook" /></a>
-            <a href="#"><img src="https://via.placeholder.com/24/twitter.png" alt="Twitter" /></a>
-            <a href="#"><img src="https://via.placeholder.com/24/linkedin.png" alt="LinkedIn" /></a>
-        </div>
-        <p class="small mb-0">&copy; 2025 ABC University. All rights reserved.</p>
+        <div class="small mb-2 text-muted">&copy; 2025 ABC University. All rights reserved.</div>
     </div>
 </footer>
 
@@ -716,27 +611,29 @@ foreach ($events as $event) {
 
     // Populate edit modal with event data
     const editEventModal = document.getElementById('editEventModal');
-    editEventModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const eventId = button.getAttribute('data-event-id');
-        const title = button.getAttribute('data-title');
-        const date = button.getAttribute('data-date');
-        const city = button.getAttribute('data-city');
-        const venue = button.getAttribute('data-venue');
-        const type = button.getAttribute('data-type');
-        const startTime = button.getAttribute('data-start-time');
-        const endTime = button.getAttribute('data-end-time');
+    if (editEventModal) {
+        editEventModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const eventId = button.getAttribute('data-event-id');
+            const title = button.getAttribute('data-title');
+            const date = button.getAttribute('data-date');
+            const city = button.getAttribute('data-city');
+            const venue = button.getAttribute('data-venue');
+            const type = button.getAttribute('data-type');
+            const startTime = button.getAttribute('data-start-time');
+            const endTime = button.getAttribute('data-end-time');
 
-        const modal = this;
-        modal.querySelector('#edit_event_id').value = eventId;
-        modal.querySelector('#edit_event_title').value = title;
-        modal.querySelector('#edit_event_date').value = date;
-        modal.querySelector('#edit_city').value = city;
-        modal.querySelector('#edit_venue').value = venue;
-        modal.querySelector('#edit_type').value = type;
-        modal.querySelector('#edit_start_time').value = startTime;
-        modal.querySelector('#edit_end_time').value = endTime;
-    });
+            const modal = this;
+            modal.querySelector('#edit_event_id').value = eventId;
+            modal.querySelector('#edit_event_title').value = title;
+            modal.querySelector('#edit_event_date').value = date;
+            modal.querySelector('#edit_city').value = city;
+            modal.querySelector('#edit_venue').value = venue;
+            modal.querySelector('#edit_type').value = type;
+            modal.querySelector('#edit_start_time').value = startTime;
+            modal.querySelector('#edit_end_time').value = endTime;
+        });
+    }
 </script>
 </body>
 </html>
