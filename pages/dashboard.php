@@ -48,6 +48,15 @@ $recent_jobs_query = "SELECT j.job_title, j.company, j.location, j.post_date
 $recent_jobs_stmt = executeQuery($recent_jobs_query);
 $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 ?>
+<?php
+require_once '../config/database.php';
+requireLogin();
+
+$user_info = getUserInfo($_SESSION['user_id']);
+$user_id = $_SESSION['user_id'];
+
+// ... your PHP code for stats and queries (unchanged) ...
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,42 +66,102 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <link href="../assets/css/custom.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Open Sans', sans-serif;
             background-color: #faf5f6;
             color: #002147;
         }
+        /* ===== Dashboard Card Animations and Styles ===== */
         .dashboard-card {
             border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 18px;
+            box-shadow: 0 2px 16px 0 rgba(0,0,0,0.09);
+            overflow: hidden;
+            transform: translateY(0);
+            transition:
+                box-shadow 0.33s cubic-bezier(.4,0,.2,1),
+                transform 0.33s cubic-bezier(.4,0,.2,1);
+            opacity: 0;
+            animation: fadein-up 0.8s 0.18s forwards;
+        }
+        .dashboard-card:hover {
+            box-shadow: 0 14px 32px rgba(32,90,190,0.16), 0 1.5px 9px rgba(0,0,0,0.04);
+            transform: translateY(-6px) scale(1.024);
+        }
+        @keyframes fadein-up {
+            from { opacity: 0; transform: translateY(40px);}
+            to { opacity: 1; transform: translateY(0);}
         }
         .dashboard-card.primary .card-body {
-            background: linear-gradient(to right, #1861bf, #6bbcf6);
+            background: linear-gradient(90deg, #1861bf 0%, #6bbcf6 100%);
             color: white;
+            position: relative;
+            overflow: hidden;
         }
         .dashboard-card.success .card-body {
-            background: linear-gradient(to right, #28a745, #71dd8a);
+            background: linear-gradient(90deg, #28a745 0%, #71dd8a 100%);
             color: white;
+            position: relative;
         }
         .dashboard-card.warning .card-body {
-            background: linear-gradient(to right, #ffc107, #ffda6a);
+            background: linear-gradient(90deg, #ffc107 0%, #ffda6a 100%);
             color: #333;
+            position: relative;
         }
         .dashboard-card.info .card-body {
-            background: linear-gradient(to right, #17a2b8, #5bc0de);
+            background: linear-gradient(90deg, #17a2b8 0%, #5bc0de 100%);
             color: white;
+            position: relative;
         }
         .dashboard-card .card-body {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            text-align: center;
+            text-align: left;
+            min-height: 105px;
+            border-radius: 18px;
+            box-shadow: 0 0.5px 8px rgba(120,160,230,0.08) inset;
         }
-        .dashboard-card .row {
-            justify-content: center;
+        .dashboard-card .card-body .col-auto i {
+            filter: drop-shadow(0 3px 10px rgba(80,110,200,0.13));
+        }
+        .dashboard-card .text-xs {
+            font-size: 0.94rem;
+            font-weight: 600;
+            opacity: 0.90;
+            text-shadow: 0 0.5px 8px rgba(255,255,255,0.06);
+        }
+        .dashboard-card .h5 {
+            font-size: 2.05rem;
+            font-weight: 800;
+            margin-top: 0.25rem;
+        }
+        /* ===== Section Card Animations ===== */
+        .card, .alert, .list-group-item {
+            opacity: 0;
+            animation: fadein-up 0.9s 0.25s forwards;
+        }
+        .alert { animation-delay: 0.27s; }
+        .list-group-item { animation-delay: 0.4s; }
+        /* ======= Quick Actions Buttons ======= */
+        .quick-actions .btn {
+            font-size: 1.09rem;
+            border-radius: 16px;
+            padding: 1.25rem 0.5rem;
+            font-weight: 600;
+            box-shadow: 0 1.5px 10px rgba(60,110,180,0.07);
+            transition:
+                background 0.19s cubic-bezier(.4,0,.2,1),
+                color 0.19s cubic-bezier(.4,0,.2,1),
+                box-shadow 0.23s cubic-bezier(.4,0,.2,1),
+                transform 0.21s cubic-bezier(.4,0,.2,1);
+            opacity: 0.95;
+        }
+        .quick-actions .btn:hover, .quick-actions .btn:focus {
+            transform: scale(1.06) translateY(-4px);
+            box-shadow: 0 8px 22px rgba(52,132,255,0.13);
+            opacity: 1;
         }
         .card-body.centered {
             text-align: center;
@@ -102,23 +171,24 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             flex-direction: column;
             align-items: center;
             text-align: center;
-        }
-        .list-group-item .d-flex {
-            flex-direction: column;
-            align-items: center;
+            border: none;
+            border-bottom: 1px solid #f3f3f3;
+            background: none;
         }
         .list-group-item .badge {
             margin-top: 0.5rem;
+            font-size: 1rem;
         }
-        .action-link {
-            color: #003087;
-            font-weight: 700;
-            text-decoration: underline;
+        .footer {
+            font-size: 0.98rem;
         }
-        .action-link:hover {
-            color: #002147;
-            text-decoration: underline;
+        .btn-outline-primary, .btn-outline-success, .btn-outline-warning, .btn-outline-info {
+            background: white;
         }
+        .btn-outline-primary:hover { background: #1861bf; color: #fff; }
+        .btn-outline-success:hover { background: #28a745; color: #fff; }
+        .btn-outline-warning:hover { background: #ffc107; color: #222; }
+        .btn-outline-info:hover    { background: #17a2b8; color: #fff; }
     </style>
 </head>
 <body>
@@ -127,7 +197,6 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
 <div class="container-fluid">
     <div class="row">
         <?php include '../includes/sidebar.php'; ?>
-
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2 text-center w-100">
@@ -156,78 +225,67 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card dashboard-card primary h-100">
                         <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col">
-                                    <div class="text-xs font-weight-bold text-uppercase mb-1">
-                                        Upcoming Events
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold">
-                                        <?php echo $stats['upcoming_events']; ?>
-                                    </div>
+                            <div>
+                                <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                    Upcoming Events
                                 </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-calendar fa-2x"></i>
+                                <div class="h5 mb-0 font-weight-bold">
+                                    <?php echo $stats['upcoming_events']; ?>
                                 </div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar fa-2x"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card dashboard-card success h-100">
                         <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col">
-                                    <div class="text-xs font-weight-bold text-uppercase mb-1">
-                                        My Events
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold">
-                                        <?php echo $stats['my_events']; ?>
-                                    </div>
+                            <div>
+                                <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                    My Events
                                 </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-user-check fa-2x"></i>
+                                <div class="h5 mb-0 font-weight-bold">
+                                    <?php echo $stats['my_events']; ?>
                                 </div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-user-check fa-2x"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card dashboard-card warning h-100">
                         <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col">
-                                    <div class="text-xs font-weight-bold text-uppercase mb-1">
-                                        Recent Jobs
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold">
-                                        <?php echo $stats['recent_jobs']; ?>
-                                    </div>
+                            <div>
+                                <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                    Recent Jobs
                                 </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-briefcase fa-2x"></i>
+                                <div class="h5 mb-0 font-weight-bold">
+                                    <?php echo $stats['recent_jobs']; ?>
                                 </div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-briefcase fa-2x"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card dashboard-card info h-100">
                         <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col">
-                                    <div class="text-xs font-weight-bold text-uppercase mb-1">
-                                        Unread Messages
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold">
-                                        <?php echo $stats['unread_messages']; ?>
-                                    </div>
+                            <div>
+                                <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                    Unread Messages
                                 </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-envelope fa-2x"></i>
+                                <div class="h5 mb-0 font-weight-bold">
+                                    <?php echo $stats['unread_messages']; ?>
                                 </div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-envelope fa-2x"></i>
                             </div>
                         </div>
                     </div>
@@ -318,7 +376,7 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             </div>
 
             <!-- Quick Actions -->
-            <div class="row mb-4 justify-content-center">
+            <div class="row mb-4 justify-content-center quick-actions">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header text-center">
@@ -362,4 +420,5 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
 <?php include '../includes/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/js/custom
+</body>
+</html>
