@@ -2,67 +2,58 @@
 if (!isset($_SESSION)) {
     session_start();
 }
+require_once '../config/database.php'; // For executeQuery()
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #faf5f6;
+            color: #002147;
+        }
+        .bg-navy {
+            background-color: #002147;
+        }
+        .navbar.bg-primary {
+            background: linear-gradient(to right, #002147, #0077c8) !important;
+        }
+        .navbar-brand, .nav-link, .dropdown-item {
+            color: white !important;
+        }
+        .nav-link:hover, .dropdown-item:hover {
+            color: #f8f9fa !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .nav-link.active {
+            font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.2) !important;
+        }
+        .badge.bg-danger {
+            background-color: #dc3545 !important;
+        }
+    </style>
+</head>
+<body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
     <div class="container-fluid">
         <a class="navbar-brand" href="../pages/dashboard.php">
             <i class="fas fa-graduation-cap me-2"></i>Alumni Relationship & Networking System
         </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>"
-                       href="../pages/dashboard.php">
-                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'events.php' ? 'active' : ''; ?>"
-                       href="../pages/events.php">
-                        <i class="fas fa-calendar me-1"></i>Events
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'jobs.php' ? 'active' : ''; ?>"
-                       href="../pages/jobs.php">
-                        <i class="fas fa-briefcase me-1"></i>Jobs
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'alumni.php' ? 'active' : ''; ?>"
-                       href="../pages/alumni.php">
-                        <i class="fas fa-users me-1"></i>Network
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'communications.php' ? 'active' : ''; ?>"
-                       href="../pages/communications.php">
-                        <i class="fas fa-envelope me-1"></i>Messages
-                        <?php
-                        // Get unread message count
-                        if (isset($_SESSION['user_id'])) {
-                            $unread_query = "SELECT COUNT(*) as count FROM sends WHERE person_id = ? AND response = 'Unread'";
-                            $unread_stmt = executeQuery($unread_query, [$_SESSION['user_id']]);
-                            $unread_count = $unread_stmt ? $unread_stmt->fetch()['count'] : 0;
-                            if ($unread_count > 0) {
-                                echo '<span class="badge bg-danger ms-1">' . $unread_count . '</span>';
-                            }
-                        }
-                        ?>
-                    </a>
-                </li>
-            </ul>
-
             <ul class="navbar-nav">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                       data-bs-toggle="dropdown">
+                       data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-user-circle me-1"></i>
                         <?php echo isset($_SESSION['user_name']) ? htmlspecialchars($_SESSION['user_name']) : 'User'; ?>
                     </a>
@@ -89,3 +80,5 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
     </div>
 </nav>
+</body>
+</html>

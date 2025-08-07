@@ -64,13 +64,14 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             background-color: #faf5f6;
             color: #002147;
         }
-        .bg-navy {
-            background-color: #002147;
-        }
         .dashboard-card {
             border: none;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .dashboard-card.primary .card-body {
+            background: linear-gradient(to right, #1861bf, #6bbcf6);
+            color: white;
         }
         .dashboard-card.success .card-body {
             background: linear-gradient(to right, #28a745, #71dd8a);
@@ -83,6 +84,31 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
         .dashboard-card.info .card-body {
             background: linear-gradient(to right, #17a2b8, #5bc0de);
             color: white;
+        }
+        .dashboard-card .card-body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .dashboard-card .row {
+            justify-content: center;
+        }
+        .card-body.centered {
+            text-align: center;
+        }
+        .list-group-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .list-group-item .d-flex {
+            flex-direction: column;
+            align-items: center;
+        }
+        .list-group-item .badge {
+            margin-top: 0.5rem;
         }
         .action-link {
             color: #003087;
@@ -104,7 +130,7 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">
+                <h1 class="h2 text-center w-100">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                 </h1>
                 <div class="btn-toolbar mb-2 mb-md-0">
@@ -117,7 +143,7 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             </div>
 
             <!-- Welcome Message -->
-            <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <div class="alert alert-info alert-dismissible fade show text-center" role="alert">
                 <i class="fas fa-info-circle me-2"></i>
                 <strong>Welcome back, <?php echo htmlspecialchars($user_info['first_name']); ?>!</strong>
                 You have <?php echo $stats['unread_messages']; ?> unread messages and
@@ -126,12 +152,12 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             </div>
 
             <!-- Statistics Cards -->
-            <div class="row mb-4">
+            <div class="row mb-4 justify-content-center">
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card dashboard-card h-100">
+                    <div class="card dashboard-card primary h-100">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
+                                <div class="col">
                                     <div class="text-xs font-weight-bold text-uppercase mb-1">
                                         Upcoming Events
                                     </div>
@@ -151,7 +177,7 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                     <div class="card dashboard-card success h-100">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
+                                <div class="col">
                                     <div class="text-xs font-weight-bold text-uppercase mb-1">
                                         My Events
                                     </div>
@@ -171,7 +197,7 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                     <div class="card dashboard-card warning h-100">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
+                                <div class="col">
                                     <div class="text-xs font-weight-bold text-uppercase mb-1">
                                         Recent Jobs
                                     </div>
@@ -191,7 +217,7 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                     <div class="card dashboard-card info h-100">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
+                                <div class="col">
                                     <div class="text-xs font-weight-bold text-uppercase mb-1">
                                         Unread Messages
                                     </div>
@@ -209,14 +235,14 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             </div>
 
             <!-- Content Row -->
-            <div class="row">
+            <div class="row justify-content-center">
                 <!-- Recent Events -->
                 <div class="col-lg-6 mb-4">
                     <div class="card h-100">
-                        <div class="card-header">
+                        <div class="card-header text-center">
                             <i class="fas fa-calendar-check me-2"></i>My Recent Events
                         </div>
-                        <div class="card-body">
+                        <div class="card-body centered">
                             <?php if (empty($recent_events)): ?>
                                 <div class="text-center text-muted py-4">
                                     <i class="fas fa-calendar-times fa-3x mb-3"></i>
@@ -228,14 +254,12 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                             <?php else: ?>
                                 <div class="list-group list-group-flush">
                                     <?php foreach ($recent_events as $event): ?>
-                                        <div class="list-group-item d-flex justify-content-between align-items-start">
-                                            <div class="ms-2 me-auto">
-                                                <div class="fw-bold"><?php echo htmlspecialchars($event['event_title']); ?></div>
-                                                <small class="text-muted">
-                                                    <i class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($event['city']); ?>
-                                                    <i class="fas fa-calendar ms-2 me-1"></i><?php echo date('M d, Y', strtotime($event['event_date'])); ?>
-                                                </small>
-                                            </div>
+                                        <div class="list-group-item">
+                                            <div class="fw-bold"><?php echo htmlspecialchars($event['event_title']); ?></div>
+                                            <small class="text-muted">
+                                                <i class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($event['city']); ?>
+                                                <i class="fas fa-calendar ms-2 me-1"></i><?php echo date('M d, Y', strtotime($event['event_date'])); ?>
+                                            </small>
                                             <span class="badge bg-<?php echo $event['status'] == 'Confirmed' ? 'success' : 'warning'; ?> rounded-pill">
                                                 <?php echo $event['status']; ?>
                                             </span>
@@ -255,10 +279,10 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                 <!-- Recent Jobs -->
                 <div class="col-lg-6 mb-4">
                     <div class="card h-100">
-                        <div class="card-header">
+                        <div class="card-header text-center">
                             <i class="fas fa-briefcase me-2"></i>Latest Job Opportunities
                         </div>
-                        <div class="card-body">
+                        <div class="card-body centered">
                             <?php if (empty($recent_jobs)): ?>
                                 <div class="text-center text-muted py-4">
                                     <i class="fas fa-briefcase fa-3x mb-3"></i>
@@ -271,10 +295,8 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                                 <div class="list-group list-group-flush">
                                     <?php foreach ($recent_jobs as $job): ?>
                                         <div class="list-group-item">
-                                            <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-1"><?php echo htmlspecialchars($job['job_title']); ?></h6>
-                                                <small class="text-muted"><?php echo date('M d', strtotime($job['post_date'])); ?></small>
-                                            </div>
+                                            <h6 class="mb-1"><?php echo htmlspecialchars($job['job_title']); ?></h6>
+                                            <small class="text-muted"><?php echo date('M d', strtotime($job['post_date'])); ?></small>
                                             <p class="mb-1">
                                                 <i class="fas fa-building me-1"></i><?php echo htmlspecialchars($job['company']); ?>
                                             </p>
@@ -296,14 +318,14 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             </div>
 
             <!-- Quick Actions -->
-            <div class="row mb-4">
+            <div class="row mb-4 justify-content-center">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header">
+                        <div class="card-header text-center">
                             <i class="fas fa-bolt me-2"></i>Quick Actions
                         </div>
-                        <div class="card-body">
-                            <div class="row text-center">
+                        <div class="card-body centered">
+                            <div class="row text-center justify-content-center">
                                 <div class="col-md-3 mb-3">
                                     <a href="profile.php" class="btn btn-outline-primary btn-lg w-100">
                                         <i class="fas fa-user-edit d-block mb-2"></i>
@@ -340,36 +362,4 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
 <?php include '../includes/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/js/custom.js"></script>
-<script>
-    // Add dashboard-specific JavaScript
-    document.addEventListener('DOMContentLoaded', function() {
-        // Auto-refresh dashboard stats every 5 minutes
-        setInterval(function() {
-            // You can implement AJAX calls to refresh stats here
-            console.log('Dashboard stats refresh');
-        }, 300000);
-
-        // Animate counter numbers
-        const counters = document.querySelectorAll('.h5');
-        counters.forEach(counter => {
-            const target = parseInt(counter.textContent);
-            let current = 0;
-            const increment = target / 20;
-
-            const updateCounter = () => {
-                if (current < target) {
-                    current += increment;
-                    counter.textContent = Math.ceil(current);
-                    setTimeout(updateCounter, 50);
-                } else {
-                    counter.textContent = target;
-                }
-            };
-
-            updateCounter();
-        });
-    });
-</script>
-</body>
-</html>
+<script src="../assets/js/custom
