@@ -394,6 +394,7 @@ if ($user_info) {
     </style>
 </head>
 <body>
+
 <?php include '../includes/navbar.php'; ?>
 
 <!-- Profile Header -->

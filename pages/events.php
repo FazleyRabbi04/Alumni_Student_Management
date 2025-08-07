@@ -286,7 +286,7 @@ foreach ($events as $event) {
             color: #002147;
         }
         .hero {
-            background: linear-gradient(90deg, #3484ff 0%, #3fcfff 100%);
+            background: linear-gradient(to right, #002147, #0077c8);
             color: #fff;
             padding: 60px 20px 30px 20px;
             text-align: center;
@@ -587,21 +587,7 @@ foreach ($events as $event) {
     </div>
 </div>
 
-<!-- Footer -->
-<footer class="footer text-center mt-4 py-4 bg-white border-top">
-    <div class="container">
-        <div class="fw-bold fs-5 mb-2">Alumni Relationship & Networking System</div>
-        <div class="mb-3">
-            <a href="profile.php">Alumni Profiles</a>
-            <a href="events.php">Events</a>
-            <a href="mentorship.php">Mentorship</a>
-            <a href="careers.php">Careers</a>
-            <a href="terms.php">Terms</a>
-            <a href="privacy.php">Privacy</a>
-        </div>
-        <div class="small mb-2 text-muted">&copy; 2025 ABC University. All rights reserved.</div>
-    </div>
-</footer>
+<?php include '../includes/footer.php'; ?>
 
 <!-- JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
