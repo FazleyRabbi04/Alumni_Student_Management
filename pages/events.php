@@ -141,10 +141,34 @@ try {
 
 // Build the database query for events
 try {
+    // Step 1: Build count query (for pagination)
+    $count_query = "SELECT COUNT(*) FROM events WHERE 1=1";
+    $count_params = [];
+
+    if (!empty($search)) {
+        $count_query .= " AND (event_title LIKE ? OR city LIKE ? OR venue LIKE ?)";
+        $count_params[] = '%' . $search . '%';
+        $count_params[] = '%' . $search . '%';
+        $count_params[] = '%' . $search . '%';
+    }
+
+    if (!empty($event_type)) {
+        $count_query .= " AND type = ?";
+        $count_params[] = $event_type;
+    }
+
+    $count_stmt = executeQuery($count_query, $count_params);
+    if ($count_stmt === false) {
+        throw new Exception("Failed to execute count query");
+    }
+
+    $total_events = $count_stmt->fetchColumn();
+    $total_pages = ceil($total_events / $events_per_page);
+
+    // Step 2: Build main event query
     $query = "SELECT * FROM events WHERE 1=1";
     $params = [];
 
-    // Add search filter
     if (!empty($search)) {
         $query .= " AND (event_title LIKE ? OR city LIKE ? OR venue LIKE ?)";
         $params[] = '%' . $search . '%';
@@ -152,30 +176,46 @@ try {
         $params[] = '%' . $search . '%';
     }
 
-    // Add event type filter
     if (!empty($event_type)) {
         $query .= " AND type = ?";
         $params[] = $event_type;
     }
 
-    // Get total count for pagination
-    $count_query = "SELECT COUNT(*) FROM ($query) AS total";
-    $count_stmt = executeQuery($count_query, $params);
-    if ($count_stmt === false) {
-        throw new Exception("Failed to execute count query");
-    }
-    $total_events = $count_stmt->fetchColumn();
-    $total_pages = ceil($total_events / $events_per_page);
-
-    // Add pagination
     $offset = ($page - 1) * $events_per_page;
-    $query .= " ORDER BY event_date ASC LIMIT ?, ?";
-    $params[] = (int)$offset; // Explicitly cast to int
-    $params[] = (int)$events_per_page; // Explicitly cast to int
+    $query .= " ORDER BY event_date ASC LIMIT " . (int)$offset . ", " . (int)$events_per_page;
+
     $stmt = executeQuery($query, $params);
     if ($stmt === false) {
         throw new Exception("Failed to execute event query");
     }
+
+    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Step 3: Get registration status
+    $user_registrations = [];
+    if (isLoggedIn()) {
+        $query = "SELECT event_id, role, response, status FROM registers WHERE person_id = ?";
+        $stmt = executeQuery($query, [$_SESSION['user_id']]);
+        if ($stmt) {
+            $registrations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($registrations as $reg) {
+                $user_registrations[$reg['event_id']] = $reg;
+            }
+        } else {
+            error_log("Error fetching user registrations for user_id: {$_SESSION['user_id']}");
+        }
+    }
+} catch (Exception $e) {
+    $error_message = "Oops! Something went wrong while loading the events. Please try again later.";
+    $debug_info = [
+        'message' => $e->getMessage(),
+        'query' => $query,
+        'params' => $params,
+        'user_id' => $_SESSION['user_id'] ?? 'guest',
+        'time' => date('Y-m-d H:i:s')
+    ];
+    error_log("EVENT LOAD ERROR: " . json_encode($debug_info));
+
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Get registration status for logged-in user
@@ -192,7 +232,8 @@ try {
             error_log("Error fetching user registrations for user_id: {$_SESSION['user_id']}");
         }
     }
-} catch (Exception $e) {
+}
+catch (Exception $e) {
     $error_message = "Oops! Something went wrong while loading the events. Please try again later.";
     
     // Detailed logging for developers only

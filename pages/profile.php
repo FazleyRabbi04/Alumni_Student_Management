@@ -6,9 +6,13 @@ startSecureSession();
 requireLogin();
 
 $user_id = $_SESSION['user_id'];
+if (isset($_GET['cancel_edit'])) {
+    $edit_mode = false;
+    unset($_SESSION['edit_mode']);
+}
 $error = '';
 $success = '';
-$edit_mode = false;
+$edit_mode = $_SESSION['edit_mode'] ?? false;
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -23,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $user_data = $user_stmt->fetch();
                 if (password_verify($current_password, $user_data['password'])) {
                     $edit_mode = true;
+                    $_SESSION['edit_mode'] = true;
                     $success = 'Edit mode enabled. You can now modify your information.';
                 } else {
                     $error = 'Incorrect password. Please try again.';
@@ -52,6 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     if ($update_stmt) {
                         $success = 'Profile updated successfully!';
                         $_SESSION['user_name'] = $first_name . ' ' . $last_name;
+                        $edit_mode = true;
+                        $_SESSION['edit_mode'] = true;
                     } else {
                         $error = 'Failed to update profile. Please try again.';
                     }
@@ -73,6 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     if ($edu_stmt) {
                         $success = 'Education record added successfully!';
+                        $edit_mode = true;
+                        $_SESSION['edit_mode'] = true;
                     } else {
                         $error = 'Failed to add education record.';
                     }
@@ -97,6 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     if ($emp_stmt) {
                         $success = 'Employment record added successfully!';
+                        $edit_mode = true;
+                        $_SESSION['edit_mode'] = true;
                     } else {
                         $error = 'Failed to add employment record.';
                     }
@@ -121,6 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     if ($ach_stmt) {
                         $success = 'Achievement added successfully!';
+                        $edit_mode = true;
+                        $_SESSION['edit_mode'] = true;
                     } else {
                         $error = 'Failed to add achievement.';
                     }
@@ -145,6 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $email_stmt = executeQuery($email_query, [$user_id, $new_email]);
                         if ($email_stmt) {
                             $success = 'Email added successfully!';
+                            $edit_mode = true;
+                            $_SESSION['edit_mode'] = true;
                         } else {
                             $error = 'Failed to add email.';
                         }
@@ -170,6 +185,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $phone_stmt = executeQuery($phone_query, [$user_id, $new_phone]);
                         if ($phone_stmt) {
                             $success = 'Phone number added successfully!';
+                            $edit_mode = true;
+                            $_SESSION['edit_mode'] = true;
                         } else {
                             $error = 'Failed to add phone number.';
                         }
@@ -354,7 +371,11 @@ if ($user_info) {
                         <span class="badge bg-success fs-6">
                             <i class="fas fa-check me-1"></i>Edit Mode Active
                         </span>
+                        <a href="profile.php?cancel_edit=1" class="btn btn-outline-danger mt-2">
+                        <i class="fas fa-times-circle me-1"></i> Exit Edit Mode
+                        </a>
                     <?php endif; ?>
+                    
                 </div>
             </div>
         </div>
