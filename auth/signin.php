@@ -151,6 +151,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             margin-top: auto;
         }
 
+        .signup-link {
+            color: #003087;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        .signup-link:hover {
+            color: #0059ff;
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
             .login-section {
                 margin: 40px 20px;
@@ -203,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
             <button type="submit" class="btn btn-primary">Sign In</button>
         </form>
-        <p class="text-center mt-3">Don't have an account? <a href="signup.php">Sign Up</a></p>
+        <p class="text-center mt-3">Don't have an account? <a href="signup.php" class="signup-link">Sign Up</a></p>
     </div>
 </div>
 
