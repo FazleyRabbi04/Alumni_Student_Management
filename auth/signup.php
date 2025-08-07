@@ -14,7 +14,7 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $first_name = trim($_POST['first_name']);
     $last_name = trim($_POST['last_name']);
-    $nid = trim($_POST['nid']);
+    $Student_ID = trim($_POST['Student_ID']);
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $password = $_POST['password'];
