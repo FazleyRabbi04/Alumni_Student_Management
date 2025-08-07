@@ -61,14 +61,21 @@ function requireLogin() {
 }
 
 function getUserInfo($user_id) {
-    $query = "SELECT p.*, a.grad_year, s.batch_year 
-              FROM person p 
-              LEFT JOIN alumni a ON p.person_id = a.person_id 
-              LEFT JOIN student s ON p.person_id = s.person_id 
-              WHERE p.person_id = ?";
+    $query = "
+        SELECT 
+            p.*, 
+            s.batch_year, 
+            a.grad_year
+        FROM person p
+        LEFT JOIN student s ON p.person_id = s.person_id
+        LEFT JOIN alumni a ON p.person_id = a.person_id
+        WHERE p.person_id = ?
+        LIMIT 1
+    ";
     $stmt = executeQuery($query, [$user_id]);
-    return $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+    return $stmt && $stmt->rowCount() > 0 ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 }
+
 
 // Authentication function - THIS WAS MISSING
 function authenticateUser($email, $password) {

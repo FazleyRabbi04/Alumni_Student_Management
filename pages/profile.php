@@ -13,6 +13,23 @@ if (isset($_GET['cancel_edit'])) {
 $error = '';
 $success = '';
 $edit_mode = $_SESSION['edit_mode'] ?? false;
+// Get user information
+$user_info = getUserInfo($user_id);
+if (!$user_info) {
+    $error = 'Unable to load user profile.';
+}
+// Define user type here so it's available for POST processing
+$user_type = '';
+$year_info = '';
+if ($user_info) {
+    if (!empty($user_info['grad_year'])) {
+        $user_type = 'Alumni';
+        $year_info = $user_info['grad_year'];
+    } elseif (!empty($user_info['batch_year'])) {
+        $user_type = 'Student';
+        $year_info = $user_info['batch_year'];
+    }
+}
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -59,6 +76,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $_SESSION['user_name'] = $first_name . ' ' . $last_name;
                         $edit_mode = true;
                         $_SESSION['edit_mode'] = true;
+                        // Handle role shifting (Student → Alumni)
+                        $shift_role = $_POST['shift_role'] ?? '';
+
+                    if ($shift_role === 'Alumni' && $user_type === 'Student') {
+                        try {
+                                // Get batch year from student table (optional)
+                                $batch_stmt = executeQuery("SELECT batch_year FROM student WHERE person_id = ?", [$user_id]);
+                                $batch_year = ($batch_stmt && $batch_stmt->rowCount() > 0) ? $batch_stmt->fetchColumn() : null;
+
+                                
+                                $input_grad_year = $_POST['grad_year'] ?? '';
+
+                            if (!preg_match('/^\d{4}$/', $input_grad_year) || $input_grad_year > date('Y') || $input_grad_year < 1950)
+                            {
+                                $error = 'Please enter a valid graduation year.';
+                            } else {
+                                // Proceed with shifting
+                                $grad_year = $input_grad_year;
+
+                                $insert_alumni = executeQuery(
+                                    "INSERT INTO alumni (person_id, grad_year) VALUES (?, ?)",
+                                    [$user_id, $grad_year]
+                                );
+
+                                if ($insert_alumni) {
+                                    executeQuery("DELETE FROM student WHERE person_id = ?", [$user_id]);
+                                    $user_type = 'Alumni';
+                                    $year_info = $grad_year;
+                                    $success .= ' Your role has been shifted to Alumni.';
+                                } else {
+                                    $error .= ' Profile updated, but failed to shift role.';
+                                }
+                            }                          
+                            }catch (Exception $e) {
+                            $error .= ' Error while shifting role: ' . $e->getMessage();
+                            }
+                        }
+
                     } else {
                         $error = 'Failed to update profile. Please try again.';
                     }
@@ -66,14 +121,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $error = 'Error updating profile: ' . $e->getMessage();
                 }
             }
-        } elseif ($_POST['action'] == 'add_education') {
-            // Add education record
-            $degree = trim($_POST['degree']);
-            $institution = trim($_POST['institution']);
-            $start_date = $_POST['edu_start_date'];
-            $end_date = $_POST['edu_end_date'] ?: null;
+            } elseif ($_POST['action'] == 'add_education') {
+                // Add education record
+                $degree = trim($_POST['degree']);
+                $institution = trim($_POST['institution']);
+                $start_date = $_POST['edu_start_date'];
+                $end_date = $_POST['edu_end_date'] ?: null;
             
-            if (!empty($degree) && !empty($institution) && !empty($start_date)) {
+                if (!empty($degree) && !empty($institution) && !empty($start_date)) {
                 try {
                     $edu_query = "INSERT INTO education_history (person_id, degree, institution, start_date, end_date) VALUES (?, ?, ?, ?, ?)";
                     $edu_stmt = executeQuery($edu_query, [$user_id, $degree, $institution, $start_date, $end_date]);
@@ -201,11 +256,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Get user information
-$user_info = getUserInfo($user_id);
-if (!$user_info) {
-    $error = 'Unable to load user profile.';
-}
+
+
 
 // Get all user emails
 $emails = [];
@@ -254,19 +306,6 @@ if ($user_info) {
     $achievement_stmt = executeQuery($achievement_query, [$user_id]);
     if ($achievement_stmt) {
         $achievements = $achievement_stmt->fetchAll();
-    }
-}
-
-// Determine user type
-$user_type = '';
-$year_info = '';
-if ($user_info) {
-    if (!empty($user_info['grad_year'])) {
-        $user_type = 'Alumni';
-        $year_info = $user_info['grad_year'];
-    } elseif (!empty($user_info['batch_year'])) {
-        $user_type = 'Student';
-        $year_info = $user_info['batch_year'];
     }
 }
 ?>
@@ -465,6 +504,24 @@ if ($user_info) {
                                         <input type="text" class="form-control" name="zip" 
                                                value="<?php echo htmlspecialchars($user_info['zip']); ?>">
                                     </div>
+                                    <?php if ($user_type === 'Student'): ?>
+                                        <div class="mb-3">
+                                        <label class="form-label">Shift Role</label>
+                                        <select name="shift_role" class="form-select">
+                                        <option value="">-- Keep as Student --</option>
+                                        <option value="Alumni">Shift to Alumni</option>
+                                        </select>
+                                        <small class="text-muted">You can shift your profile to alumni once you graduate.</small>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($user_type === 'Student'): ?>
+                                        <div class="mb-3">
+                                        <label class="form-label">Graduation Year</label>
+                                        <input type="number" name="grad_year" class="form-control"
+                                            min="1950" max="<?php echo date('Y'); ?>" placeholder="e.g. 2024">
+                                        <small class="text-muted">Enter the year you graduated (e.g., 2024).</small>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 <hr>
                                 <h6 class="text-muted mb-3">Contact Information</h6>
@@ -729,6 +786,7 @@ if ($user_info) {
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Verify & Edit</button>
                     </div>
+
                 </form>
             </div>
         </div>
@@ -970,6 +1028,25 @@ if ($user_info) {
                 achDate.max = today;
             }
         });
+        //if a person is a student then if he can choose the grad_year
+                        document.addEventListener('DOMContentLoaded', function () {
+                        const roleSelect = document.querySelector('select[name="shift_role"]');
+                        const gradYearInput = document.querySelector('input[name="grad_year"]');
+
+                        function toggleGradYear() {
+                            if (roleSelect.value === 'Alumni') {
+                                gradYearInput.closest('.mb-3').style.display = 'block';
+                            } else {
+                                gradYearInput.closest('.mb-3').style.display = 'none';
+                                gradYearInput.value = '';
+                            }
+                        }
+
+                        if (roleSelect && gradYearInput) {
+                            toggleGradYear(); // On load
+                            roleSelect.addEventListener('change', toggleGradYear);
+                        }
+                    });
     </script>
 </body>
 </html>
