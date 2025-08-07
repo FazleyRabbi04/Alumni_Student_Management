@@ -131,7 +131,6 @@ if (isLoggedIn()) {
         .footer a:hover {
             color: #ffffff;
         }
-
         .social-icons img {
             margin: 0 6px;
             width: 24px;

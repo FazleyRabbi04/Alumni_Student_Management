@@ -1,4 +1,3 @@
-```php
 <?php
 require_once '../config/database.php';
 requireLogin();
@@ -64,9 +63,6 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             font-family: 'Open Sans', sans-serif;
             background-color: #faf5f6;
             color: #002147;
-        }
-        .bg-navy {
-            background-color: #002147;
         }
         .dashboard-card {
             border: none;
