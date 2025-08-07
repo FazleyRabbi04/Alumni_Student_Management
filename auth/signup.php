@@ -14,7 +14,7 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $first_name = trim($_POST['first_name']);
     $last_name = trim($_POST['last_name']);
-    $Student_ID = trim($_POST['Student_ID']);
+    $student_id = trim($_POST['student_id']);
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $password = $_POST['password'];
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $grad_batch_year = $user_type === 'student' ? $_POST['batch_year'] : $_POST['grad_batch_year'];
 
     // Validation
-    if (empty($first_name) || empty($last_name) || empty($nid) || empty($email) ||
+    if (empty($first_name) || empty($last_name) || empty($student_id) || empty($email) ||
         empty($phone) || empty($password) || empty($user_type) || empty($grad_batch_year)) {
         $error = 'Please fill in all required fields.';
     } elseif ($password !== $confirm_password) {
@@ -39,12 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } elseif (strlen($password) < 8) {
         $error = 'Password must be at least 8 characters long.';
     } else {
-        // Check if NID or email already exists
-        $check_query = "SELECT person_id FROM person WHERE NID = ? OR person_id IN (SELECT person_id FROM email_address WHERE email = ?)";
-        $check_stmt = executeQuery($check_query, [$nid, $email]);
+        // Check if Student ID or email already exists
+        $check_query = "SELECT person_id FROM person WHERE student_id = ? OR person_id IN (SELECT person_id FROM email_address WHERE email = ?)";
+        $check_stmt = executeQuery($check_query, [$student_id, $email]);
 
         if ($check_stmt && $check_stmt->rowCount() > 0) {
-            $error = 'NID or email already exists.';
+            $error = 'Student ID or email already exists.';
         } else {
             try {
                 $database = new Database();
@@ -52,13 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $db->beginTransaction();
 
                 // Insert into person table
-                $person_query = "INSERT INTO person (first_name, last_name, street, city, zip, NID, gender, department, password, date_of_birth) 
+                $person_query = "INSERT INTO person (first_name, last_name, street, city, zip, student_id, gender, department, password, date_of_birth) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
                 $stmt = $db->prepare($person_query);
                 $stmt->execute([
-                    $first_name, $last_name, $street, $city, $zip, $nid,
+                    $first_name, $last_name, $street, $city, $zip, $student_id,
                     $gender, $department, $hashed_password, $date_of_birth
                 ]);
 
@@ -94,7 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 }
-?>
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -201,6 +200,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             color: #003087;
         }
 
+        .signup-link {
+            color: #003087;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        .signup-link:hover {
+            color: #0059ff;
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
             .signup-section {
                 margin: 30px 20px;
@@ -237,12 +247,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
         </div>
         <div class="mb-3">
-            <label for="nid" class="form-label">NID</label>
-            <input type="text" name="nid" class="form-control" id="nid" required />
+            <label for="student_id" class="form-label">Student ID</label>
+            <input type="text" name="student_id" class="form-control" id="student_id" required />
         </div>
         <div class="mb-3">
             <label for="email" class="form-label">Email</label>
-            <input type="email" name="email" class="form-control" id="email" required />
+            <input type="email" name="email" class="form-control" id="email" placeholder="user@abc.edu" required />
         </div>
         <div class="mb-3">
             <label for="phone" class="form-label">Phone</label>
@@ -250,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
         <div class="mb-3">
             <label for="password" class="form-label">Create Password</label>
-            <input type="password" name="password" class="form-control" id="password" required />
+            <input type="password" name="password" class="form-control" id="password" placeholder="Password must be at least 8 characters long." required />
         </div>
         <div class="mb-3">
             <label for="confirm_password" class="form-label">Confirm Password</label>
@@ -271,7 +281,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
         <div class="mb-3">
             <label for="department" class="form-label">Department</label>
-            <input type="text" name="department" class="form-control" id="department" required />
+            <select name="department" class="form-control" id="department" required>
+                <option value="">Select Department</option>
+                <option value="Bachelor of Architecture">Bachelor of Architecture</option>
+                <option value="BS in Civil & Environmental Engineering (CEE)">BS in Civil & Environmental Engineering (CEE)</option>
+                <option value="BS in Computer Science & Engineering (CSE)">BS in Computer Science & Engineering (CSE)</option>
+                <option value="BS in Electrical & Electronic Engineering (EEE)">BS in Electrical & Electronic Engineering (EEE)</option>
+                <option value="BS in Electronic & Telecom Engineering (ETE)">BS in Electronic & Telecom Engineering (ETE)</option>
+                <option value="BS in Biochemistry and Biotechnology">BS in Biochemistry and Biotechnology</option>
+                <option value="BS in Environmental Science & Management">BS in Environmental Science & Management</option>
+                <option value="BS in Microbiology">BS in Microbiology</option>
+                <option value="BPharm Professional">BPharm Professional</option>
+                <option value="BBA Major in Accounting">BBA Major in Accounting</option>
+                <option value="BBA Major in Economics">BBA Major in Economics</option>
+                <option value="BBA Major in Entrepreneurship">BBA Major in Entrepreneurship</option>
+                <option value="BBA Major in Finance">BBA Major in Finance</option>
+                <option value="BBA Major in Human Resource Management">BBA Major in Human Resource Management</option>
+                <option value="BBA Major in International Business">BBA Major in International Business</option>
+                <option value="BBA Major in Management">BBA Major in Management</option>
+                <option value="BBA Major in Management Information Systems">BBA Major in Management Information Systems</option>
+                <option value="BBA Major in Marketing">BBA Major in Marketing</option>
+                <option value="BBA Major in Supply Chain Management">BBA Major in Supply Chain Management</option>
+                <option value="BBA General">BBA General</option>
+                <option value="BS in Economics">BS in Economics</option>
+                <option value="BA in English">BA in English</option>
+                <option value="Bachelor of Laws (LLB Hons)">Bachelor of Laws (LLB Hons)</option>
+                <option value="BSS in Media and Journalism (MAJ)">BSS in Media and Journalism (MAJ)</option>
+            </select>
         </div>
         <div class="mb-3">
             <label for="street" class="form-label">Street</label>
@@ -300,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
         <button type="submit" class="btn btn-primary">Register</button>
     </form>
-    <p class="text-center mt-3">Already have an account? <a href="signin.php">Sign In</a></p>
+    <p class="text-center mt-3">Already have an account? <a href="signin.php" class="signup-link">Sign In</a></p>
 </div>
 
 <footer class="footer">
@@ -329,11 +365,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     });
     document.querySelector('form').addEventListener('submit', function () {
-    if (document.getElementById('user_type').value === 'student') {
-        document.getElementById('grad_batch_year').value = document.getElementById('batch_year').value;
-    } else {
-        document.getElementById('batch_year').value = document.getElementById('grad_batch_year').value;
-    }
+        if (document.getElementById('user_type').value === 'student') {
+            document.getElementById('grad_batch_year').value = document.getElementById('batch_year').value;
+        } else {
+            document.getElementById('batch_year').value = document.getElementById('grad_batch_year').value;
+        }
     });
 </script>
 </body>
