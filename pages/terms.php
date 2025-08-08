@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once '../config/database.php';
 startSecureSession();
 
 // If user is logged in, redirect to dashboard
@@ -176,26 +176,7 @@ if (isLoggedIn()) {
     </div>
 </section>
 
-<!-- Footer -->
-<footer class="footer text-center">
-    <div class="container">
-        <div class="fw-bold fs-5 mb-2">Alumni Relationship & Networking System</div>
-        <div class="mb-3">
-            <a href="profile.php">Alumni Profiles</a>
-            <a href="events.php">Events</a>
-            <a href="mentorship.php">Mentorship</a>
-            <a href="careers.php">Careers</a>
-            <a href="terms.php">Terms</a>
-            <a href="privacy.php">Privacy</a>
-        </div>
-        <div class="social-icons mb-2">
-            <a href="#"><img src="https://via.placeholder.com/24/facebook.png" alt="Facebook" /></a>
-            <a href="#"><img src="https://via.placeholder.com/24/twitter.png" alt="Twitter" /></a>
-            <a href="#"><img src="https://via.placeholder.com/24/linkedin.png" alt="LinkedIn" /></a>
-        </div>
-        <p class="small mb-0">&copy; 2025 ABC University. All rights reserved.</p>
-    </div>
-</footer>
+<?php include '../includes/footer.php'; ?>
 
 <!-- JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
