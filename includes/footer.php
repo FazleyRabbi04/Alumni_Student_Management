@@ -23,7 +23,7 @@
         <div class="fw-bold fs-5 mb-3">Alumni Relationship & Networking System</div>
 
         <div class="mb-3">
-            <a href="profile.php">Alumni Profiles</a>
+            <a href="profile.php">Profiles</a>
             <a href="events.php">Events</a>
             <a href="mentorship.php">Mentorship</a>
             <a href="careers.php">Careers</a>

@@ -30,6 +30,13 @@ $comm_query = "SELECT COUNT(*) as total FROM sends s
 $comm_stmt = executeQuery($comm_query, [$user_id]);
 $stats['unread_messages'] = $comm_stmt ? $comm_stmt->fetch()['total'] : 0;
 
+// User's registered mentorship sessions
+$mentorship_query = "SELECT COUNT(*) as total FROM mentorship_sessions ms 
+                     JOIN registers r ON ms.id = r.event_id 
+                     WHERE r.person_id = ? AND ms.date >= CURDATE()";
+$mentorship_stmt = executeQuery($mentorship_query, [$user_id]);
+$stats['mentorship_sessions'] = $mentorship_stmt ? $mentorship_stmt->fetch()['total'] : 0;
+
 // Get recent activities
 $recent_events_query = "SELECT e.event_title, e.event_date, e.city, r.status
                         FROM events e 
@@ -47,6 +54,21 @@ $recent_jobs_query = "SELECT j.job_title, j.company, j.location, j.post_date
                       LIMIT 5";
 $recent_jobs_stmt = executeQuery($recent_jobs_query);
 $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+// Get recent mentorship sessions
+$recent_mentorship_query = "SELECT ms.title, ms.date, ms.location, r.status
+                            FROM mentorship_sessions ms 
+                            JOIN registers r ON ms.id = r.event_id 
+                            WHERE r.person_id = ? 
+                            ORDER BY ms.date DESC 
+                            LIMIT 5";
+$recent_mentorship_stmt = executeQuery($recent_mentorship_query, [$user_id]);
+$recent_mentorship_sessions = $recent_mentorship_stmt ? $recent_mentorship_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+// Get available mentorship sessions for form
+$available_sessions_query = "SELECT id, title, date FROM mentorship_sessions WHERE date >= CURDATE() ORDER BY date ASC";
+$available_sessions_stmt = executeQuery($available_sessions_query);
+$available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -63,6 +85,9 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             font-family: 'Open Sans', sans-serif;
             background-color: #faf5f6;
             color: #002147;
+        }
+        .bg-navy {
+            background-color: #002147;
         }
         .dashboard-card {
             border: none;
@@ -83,6 +108,10 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
         }
         .dashboard-card.info .card-body {
             background: linear-gradient(to right, #17a2b8, #5bc0de);
+            color: white;
+        }
+        .dashboard-card.purple .card-body {
+            background: linear-gradient(to right, #6f42c1, #d3adf7);
             color: white;
         }
         .dashboard-card .card-body {
@@ -119,6 +148,21 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             color: #002147;
             text-decoration: underline;
         }
+        .btn-outline-primary, .btn-outline-success, .btn-outline-warning, .btn-outline-info, .btn-outline-purple {
+            border-radius: 10px;
+        }
+        .btn-outline-purple {
+            border-color: #6f42c1;
+            color: #6f42c1;
+        }
+        .btn-outline-purple:hover {
+            background-color: #6f42c1;
+            color: white;
+        }
+        .mentorship-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
@@ -139,10 +183,27 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
             <div class="alert alert-info alert-dismissible fade show text-center" role="alert">
                 <i class="fas fa-info-circle me-2"></i>
                 <strong>Welcome back, <?php echo htmlspecialchars($user_info['first_name']); ?>!</strong>
-                You have <?php echo $stats['unread_messages']; ?> unread messages and
-                <?php echo $stats['my_events']; ?> upcoming events.
+                You have <?php echo $stats['unread_messages']; ?> unread messages,
+                <?php echo $stats['my_events']; ?> upcoming events, and
+                <?php echo $stats['mentorship_sessions']; ?> mentorship sessions.
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
+
+            <!-- Alerts for Form Submission -->
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
+                    <?php echo htmlspecialchars($_SESSION['success']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <?php unset($_SESSION['success']); ?>
+            <?php endif; ?>
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+                    <?php echo htmlspecialchars($_SESSION['error']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <?php unset($_SESSION['error']); ?>
+            <?php endif; ?>
 
             <!-- Statistics Cards -->
             <div class="row mb-4 justify-content-center">
@@ -220,6 +281,26 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-envelope fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card dashboard-card purple h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col">
+                                    <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                        Mentorship Sessions
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold">
+                                        <?php echo $stats['mentorship_sessions']; ?>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-chalkboard-teacher fa-2x"></i>
                                 </div>
                             </div>
                         </div>
@@ -308,6 +389,46 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                         </div>
                     </div>
                 </div>
+
+                <!-- Recent Mentorship Sessions -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header text-center">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>My Recent Mentorship Sessions
+                        </div>
+                        <div class="card-body centered">
+                            <?php if (empty($recent_mentorship_sessions)): ?>
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-chalkboard fa-3x mb-3"></i>
+                                    <p>No mentorship sessions registered yet.</p>
+                                    <a href="mentorship.php" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus me-1"></i>Browse Mentorship Sessions
+                                    </a>
+                                </div>
+                            <?php else: ?>
+                                <div class="list-group list-group-flush">
+                                    <?php foreach ($recent_mentorship_sessions as $session): ?>
+                                        <div class="list-group-item">
+                                            <div class="fw-bold"><?php echo htmlspecialchars($session['title']); ?></div>
+                                            <small class="text-muted">
+                                                <i class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($session['location']); ?>
+                                                <i class="fas fa-calendar ms-2 me-1"></i><?php echo date('M d, Y', strtotime($session['date'])); ?>
+                                            </small>
+                                            <span class="badge bg-<?php echo $session['status'] == 'Confirmed' ? 'success' : 'warning'; ?> rounded-pill">
+                                                <?php echo $session['status']; ?>
+                                            </span>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="mentorship.php" class="btn btn-outline-primary btn-sm">
+                                        View All Mentorship Sessions <i class="fas fa-arrow-right ms-1"></i>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Quick Actions -->
@@ -343,7 +464,59 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
                                         Messages
                                     </a>
                                 </div>
+                                <div class="col-md-3 mb-3">
+                                    <button type="button" class="btn btn-outline-purple btn-lg w-100" data-bs-toggle="modal" data-bs-target="#mentorshipModal">
+                                        <i class="fas fa-chalkboard-teacher d-block mb-2"></i>
+                                        Register Mentorship
+                                    </button>
+                                </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mentorship Registration Modal -->
+            <div class="modal fade" id="mentorshipModal" tabindex="-1" aria-labelledby="mentorshipModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="mentorshipModalLabel">Register for Mentorship</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form class="mentorship-form" action="../pages/register_mentorship.php" method="POST">
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name"
+                                           value="<?php echo htmlspecialchars($user_info['first_name'] . ' ' . $user_info['last_name']); ?>" required readonly />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email"
+                                           value="<?php echo htmlspecialchars($user_info['email']); ?>" required readonly />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="role" class="form-label">Role</label>
+                                    <select class="form-control" id="role" name="role" required>
+                                        <option value="">Select Role</option>
+                                        <option value="student" <?php echo isset($user_info['batch_year']) ? 'selected' : ''; ?>>Student</option>
+                                        <option value="alumni" <?php echo isset($user_info['grad_year']) ? 'selected' : ''; ?>>Alumni</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="session_id" class="form-label">Session</label>
+                                    <select class="form-control" id="session_id" name="session_id" required>
+                                        <option value="">Select Session</option>
+                                        <?php foreach ($available_sessions as $session): ?>
+                                            <option value="<?php echo $session['id']; ?>">
+                                                <?php echo htmlspecialchars($session['title'] . ' - ' . date('M d, Y', strtotime($session['date']))); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-outline-purple w-100">Register</button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -355,4 +528,35 @@ $recent_jobs = $recent_jobs_stmt ? $recent_jobs_stmt->fetchAll(PDO::FETCH_ASSOC)
 <?php include '../includes/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/js/custom
+<script src="../assets/js/custom.js"></script>
+<script>
+    // Add dashboard-specific JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-refresh dashboard stats every 5 minutes
+        setInterval(function() {
+            console.log('Dashboard stats refresh');
+        }, 300000);
+
+        // Animate counter numbers
+        const counters = document.querySelectorAll('.h5');
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent);
+            let current = 0;
+            const increment = target / 20;
+
+            const updateCounter = () => {
+                if (current < target) {
+                    current += increment;
+                    counter.textContent = Math.ceil(current);
+                    setTimeout(updateCounter, 50);
+                } else {
+                    counter.textContent = target;
+                }
+            };
+
+            updateCounter();
+        });
+    });
+</script>
+</body>
+</html>
