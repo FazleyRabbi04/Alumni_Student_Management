@@ -174,6 +174,74 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
             left: 50%;
             transform: translate(-50%, -50%);
         }
+        /* Generic for all Quick Actions */
+.quick-action-btn {
+    font-weight: 600;
+    border-width: 2.5px;
+    border-radius: 12px;
+    padding: 26px 0 18px 0;
+    font-size: 1.17rem;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    box-shadow: 0 2px 12px rgba(40,40,60,0.02);
+    margin-bottom: 6px;
+}
+
+/* One class for each color */
+.quick-action-blue {
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+    background: #fff !important;
+}
+.quick-action-blue:hover, .quick-action-blue:focus {
+    background: #0d6efd !important;
+    color: #fff !important;
+    border-color: #0d6efd !important;
+}
+
+.quick-action-green {
+    border-color: #198754 !important;
+    color: #198754 !important;
+    background: #fff !important;
+}
+.quick-action-green:hover, .quick-action-green:focus {
+    background: #198754 !important;
+    color: #fff !important;
+    border-color: #198754 !important;
+}
+
+.quick-action-yellow {
+    border-color: #ffc107 !important;
+    color: #ffc107 !important;
+    background: #fff !important;
+}
+.quick-action-yellow:hover, .quick-action-yellow:focus {
+    background: #ffc107 !important;
+    color: #fff !important;
+    border-color: #ffc107 !important;
+}
+
+.quick-action-teal {
+    border-color: #0dcaf0 !important;
+    color: #0dcaf0 !important;
+    background: #fff !important;
+}
+.quick-action-teal:hover, .quick-action-teal:focus {
+    background: #0dcaf0 !important;
+    color: #fff !important;
+    border-color: #0dcaf0 !important;
+}
+
+.quick-action-purple {
+    border-color: #6f42c1 !important;
+    color: #6f42c1 !important;
+    background: #fff !important;
+}
+.quick-action-purple:hover, .quick-action-purple:focus {
+    background: #6f42c1 !important;
+    color: #fff !important;
+    border-color: #6f42c1 !important;
+}
+
     </style>
 </head>
 <body>
@@ -440,51 +508,54 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
                     </div>
                 </div>
             </div>
+                <!-- Quick Actions -->
+<div class="row mb-4 justify-content-center">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header text-center">
+                <i class="fas fa-bolt me-2"></i>Quick Actions
+            </div>
+            <div class="card-body centered">
+                <div class="row text-center justify-content-center g-3">
 
-            <!-- Quick Actions -->
-            <div class="row mb-4 justify-content-center">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header text-center">
-                            <i class="fas fa-bolt me-2"></i>Quick Actions
-                        </div>
-                        <div class="card-body centered">
-                            <div class="row text-center justify-content-center">
-                                <div class="col-md-3 mb-3">
-                                    <a href="profile.php" class="btn btn-outline-primary btn-lg w-100">
-                                        <i class="fas fa-user-edit d-block mb-2"></i>
-                                        Update Profile
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="events.php" class="btn btn-outline-success btn-lg w-100">
-                                        <i class="fas fa-calendar-plus d-block mb-2"></i>
-                                        Register Event
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="jobs.php" class="btn btn-outline-warning btn-lg w-100">
-                                        <i class="fas fa-briefcase d-block mb-2"></i>
-                                        Post Job
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="communications.php" class="btn btn-outline-info btn-lg w-100">
-                                        <i class="fas fa-envelope d-block mb-2"></i>
-                                        Messages
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <button type="button" class="btn btn-outline-purple btn-lg w-100" data-bs-toggle="modal" data-bs-target="#mentorshipModal">
-                                        <i class="fas fa-chalkboard-teacher d-block mb-2"></i>
-                                        Register Mentorship
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="profile.php" class="btn quick-action-btn quick-action-blue btn-lg w-100">
+                            <i class="fas fa-user-edit fa-2x d-block mb-2"></i>
+                            Update Profile
+                        </a>
                     </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="events.php" class="btn quick-action-btn quick-action-green btn-lg w-100">
+                            <i class="fas fa-calendar-plus fa-2x d-block mb-2"></i>
+                            Register Event
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="jobs.php" class="btn quick-action-btn quick-action-yellow btn-lg w-100">
+                            <i class="fas fa-briefcase fa-2x d-block mb-2"></i>
+                            Post Job
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="communications.php" class="btn quick-action-btn quick-action-teal btn-lg w-100">
+                            <i class="fas fa-envelope fa-2x d-block mb-2"></i>
+                            Messages
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="mentorship.php" class="btn quick-action-btn quick-action-purple btn-lg w-100">
+                            <i class="fas fa-chalkboard-teacher fa-2x d-block mb-2"></i>
+                            Register Mentorship
+                        </a>
+                    </div>
+
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+
 
             <!-- Mentorship Registration Modal -->
             <div class="modal fade" id="mentorshipModal" tabindex="-1" aria-labelledby="mentorshipModalLabel" aria-hidden="true">
