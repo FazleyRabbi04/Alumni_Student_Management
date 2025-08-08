@@ -1,7 +1,7 @@
 <?php
 require_once '../config/database.php';
 startSecureSession();
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['PHP_SELF']);//edit
 ?>
 <!DOCTYPE html>
 <html lang="en">
