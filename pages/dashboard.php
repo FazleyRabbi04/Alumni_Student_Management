@@ -129,6 +129,10 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
             align-items: center;
             text-align: center;
         }
+        .list-group-item .d-flex {
+            flex-direction: column;
+            align-items: center;
+        }
         .list-group-item .badge {
             margin-top: 0.5rem;
         }
@@ -151,12 +155,30 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
             background-color: #fff;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
+        .action-link {
+            color: #003087;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+        .action-link:hover {
+            color: #002147;
+            text-decoration: underline;
+        }
+        /* Prevent layout shift */
+        .modal {
+            overflow-y: auto;
+        }
+        .modal-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
 
 <?php include '../includes/navbar.php'; ?>
-
 
 <div class="container-fluid">
     <div class="row">
@@ -179,14 +201,14 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
 
             <!-- Alerts for Form Submission -->
             <?php if (isset($_SESSION['success'])): ?>
-                <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
                     <?php echo htmlspecialchars($_SESSION['success']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
                 <?php unset($_SESSION['success']); ?>
             <?php endif; ?>
             <?php if (isset($_SESSION['error'])): ?>
-                <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <?php echo htmlspecialchars($_SESSION['error']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
@@ -464,6 +486,7 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
                 </div>
             </div>
 
+            <!-- Mentorship Registration Modal -->
             <div class="modal fade" id="mentorshipModal" tabindex="-1" aria-labelledby="mentorshipModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -526,7 +549,9 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
         </main>
     </div>
 </div>
+
 <?php include '../includes/footer.php'; ?>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../assets/js/custom.js"></script>
 <script>
