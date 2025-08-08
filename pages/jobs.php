@@ -116,16 +116,139 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
     <title>Job Board - Alumni Network</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="../assets/css/custom.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F9FAFB;
+            color: #1F2937;
+            margin: 0;
+        }
+        .container-fluid {
+            padding-top: 20px;
+            padding-bottom: 40px;
+            width: 100%;
+            max-width: none;
+        }
+        .h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1E3A8A;
+        }
+        .dashboard-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .dashboard-card .card-body {
+            background: linear-gradient(135deg, #1E3A8A, #2563EB);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .dashboard-card.success .card-body {
+            background: linear-gradient(135deg, #1E3A8A, #2563EB);
+        }
+        .dashboard-card.warning .card-body {
+            background: linear-gradient(135deg, #1E3A8A, #2563EB);
+            color: #ffffff;
+        }
+        .nav-tabs .nav-link {
+            color: #6B7280;
+            font-weight: 600;
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 10px 20px;
+        }
+        .nav-tabs .nav-link.active {
+            color: #1E3A8A;
+            border-bottom: 2px solid #1E3A8A;
+            background: none;
+        }
+        .job-card .card {
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            transition: box-shadow 0.2s ease;
+        }
+        .job-card .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .job-card .card-body {
+            padding: 20px;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #F3F4F6;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+            border: none;
+            color: #FFFFFF;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1E3A8A, #2563EB);
+        }
+        .btn-outline-primary {
+            border-color: #1E3A8A;
+            color: #1E3A8A;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn-outline-primary:hover {
+            background: #1E3A8A;
+            color: #FFFFFF;
+        }
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        .modal-header {
+            background: #1E3A8A;
+            color: #FFFFFF;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .modal-body {
+            padding: 25px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1F2937;
+        }
+        .form-control {
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .form-control:focus {
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .alert {
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .badge {
+            border-radius: 10px;
+            padding: 5px 10px;
+        }
+    </style>
 </head>
 <body>
 <?php include '../includes/navbar.php'; ?>
 
-<div class="container-fluid">
+<div class="container-fluid px-0">
     <div class="row">
-        <?php include '../includes/sidebar.php'; ?>
-
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <main class="col-12 px-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2">
                     <i class="fas fa-briefcase me-2"></i>Job Board
@@ -234,8 +357,8 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                         <div class="row mb-4">
                             <div class="col-md-8">
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                    <input type="text" class="form-control" id="jobSearch" placeholder="Search jobs by title, company, or location...">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control border-start-0" id="jobSearch" placeholder="Search jobs by title, company, or location...">
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -255,7 +378,7 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                         </div>
 
                         <!-- Job Listings -->
-                        <div class="row" id="jobListings">
+                        <div class="row row-cols-1 row-cols-md-2 g-4" id="jobListings">
                             <?php if (empty($jobs)): ?>
                                 <div class="col-12">
                                     <div class="text-center py-5">
@@ -266,7 +389,7 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                                 </div>
                             <?php else: ?>
                                 <?php foreach ($jobs as $job): ?>
-                                    <div class="col-lg-6 mb-4 job-card"
+                                    <div class="col job-card"
                                          data-title="<?php echo strtolower($job['job_title']); ?>"
                                          data-company="<?php echo strtolower($job['company']); ?>"
                                          data-location="<?php echo strtolower($job['location']); ?>">
@@ -404,28 +527,27 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
             </div>
             <form method="POST">
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
                             <label for="job_title" class="form-label">Job Title *</label>
                             <input type="text" class="form-control" name="job_title" required>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="company" class="form-label">Company *</label>
                             <input type="text" class="form-control" name="company" required>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="location" class="form-label">Location *</label>
-                        <input type="text" class="form-control" name="location" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Job Description</label>
-                        <textarea class="form-control" name="description" rows="5"
-                                  placeholder="Describe the job role, requirements, benefits, etc."></textarea>
+                        <div class="col-12">
+                            <label for="location" class="form-label">Location *</label>
+                            <input type="text" class="form-control" name="location" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="description" class="form-label">Job Description</label>
+                            <textarea class="form-control" name="description" rows="5" placeholder="Describe the job role, requirements, benefits, etc."></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" name="post_job" class="btn btn-primary">Post Job</button>
                 </div>
             </form>
@@ -444,28 +566,27 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
             <form method="POST">
                 <div class="modal-body">
                     <input type="hidden" name="job_id" id="editJobId">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
                             <label for="edit_job_title" class="form-label">Job Title *</label>
                             <input type="text" class="form-control" name="job_title" id="edit_job_title" required>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="edit_company" class="form-label">Company *</label>
                             <input type="text" class="form-control" name="company" id="edit_company" required>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit_location" class="form-label">Location *</label>
-                        <input type="text" class="form-control" name="location" id="edit_location" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit_description" class="form-label">Job Description</label>
-                        <textarea class="form-control" name="description" id="edit_description" rows="5"
-                                  placeholder="Describe the job role, requirements, benefits, etc."></textarea>
+                        <div class="col-12">
+                            <label for="edit_location" class="form-label">Location *</label>
+                            <input type="text" class="form-control" name="location" id="edit_location" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="edit_description" class="form-label">Job Description</label>
+                            <textarea class="form-control" name="description" id="edit_description" rows="5" placeholder="Describe the job role, requirements, benefits, etc."></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" name="edit_job" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
@@ -487,7 +608,7 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
                     <p>Are you sure you want to delete the job "<span id="deleteJobTitle"></span>"? This action cannot be undone.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" name="delete_job" class="btn btn-danger">Delete Job</button>
                 </div>
             </form>
@@ -506,31 +627,31 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
             <div class="modal-body">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong><i class="fas fa-building me-2"></i>Company:</strong>
+                        <strong><i class="fas fa-building me-2 text-primary"></i>Company:</strong>
                         <p id="jobDetailCompany"></p>
                     </div>
                     <div class="col-md-6">
-                        <strong><i class="fas fa-map-marker-alt me-2"></i>Location:</strong>
+                        <strong><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location:</strong>
                         <p id="jobDetailLocation"></p>
                     </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <strong><i class="fas fa-user me-2"></i>Posted by:</strong>
+                        <strong><i class="fas fa-user me-2 text-primary"></i>Posted by:</strong>
                         <p id="jobDetailPoster"></p>
                     </div>
                     <div class="col-md-6">
-                        <strong><i class="fas fa-calendar me-2"></i>Posted on:</strong>
+                        <strong><i class="fas fa-calendar me-2 text-primary"></i>Posted on:</strong>
                         <p id="jobDetailDate"></p>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <strong><i class="fas fa-align-left me-2"></i>Description:</strong>
+                    <strong><i class="fas fa-align-left me-2 text-primary"></i>Description:</strong>
                     <div id="jobDetailDescription" class="mt-2"></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary">
                     <i class="fas fa-paper-plane me-1"></i>Express Interest
                 </button>
