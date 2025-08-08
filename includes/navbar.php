@@ -1,7 +1,7 @@
 <?php
 require_once '../config/database.php';
 startSecureSession();
-$current_page = basename($_SERVER['PHP_SELF']);//edi
+$current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,20 +20,32 @@ $current_page = basename($_SERVER['PHP_SELF']);//edi
         .navbar.bg-primary {
             background: #002147 !important;
         }
-        .navbar-brand, .nav-link, .dropdown-item {
-            color: white !important;
+        .navbar-brand, .nav-link {
+            color: rgba(255, 255, 255, 1) !important;
         }
-        .nav-link:hover, .dropdown-item:hover {
-            color: #f8f9fa !important;
-            background-color: rgba(255, 255, 255, 0.1) !important;
+        .nav-link:hover {
+            color: #fffefeff !important;
+            background-color: rgba(255, 255, 255, 0.2) !important;
         }
-        .navbarDropdown .dropdown-item
-        {
-            background-color: #002147 !important;
+
+        /* Dropdown menu background and item styles */
+        .dropdown-menu {
+            background-color: #1a2846 !important; /* Deep blue for dropdown background */
+            border-radius: 8px;
+            min-width: 180px;
+            border: none;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.12);
         }
-        .navbarDropdown .dropdown-item:hover
-        {
-            background-color: rgba(255, 255, 255, 0.1) !important;
+        .dropdown-item {
+            color: #fff !important;
+            background-color: transparent !important;
+        }
+        .dropdown-item:hover, .dropdown-item:focus {
+            color: #fff !important;
+            background-color: #253662 !important; /* Lighter blue on hover */
+        }
+        .dropdown-divider {
+            border-top: 1px solid #465c86;
         }
     </style>
 </head>
