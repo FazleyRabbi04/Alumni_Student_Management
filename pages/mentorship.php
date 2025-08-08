@@ -2,6 +2,71 @@
 require_once '../config/database.php';
 startSecureSession();
 
+$message = '';
+$error = '';
+
+// Handle mentorship registration
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $user_id = isLoggedIn() ? $_SESSION['user_id'] : null;
+    $full_name = trim($_POST['full_name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $role = trim($_POST['role'] ?? '');
+    $session_id = trim($_POST['session_id'] ?? '');
+    $modal_submit = isset($_POST['modal_submit']);
+
+    if (isLoggedIn()) {
+        if (empty($session_id)) {
+            $error = 'Please select a session.';
+        } else {
+            $check_query = "SELECT COUNT(*) as count FROM registers WHERE person_id = ? AND event_id = ?";
+            $check_stmt = executeQuery($check_query, [$user_id, $session_id]);
+            $count = $check_stmt->fetch()['count'];
+
+            if ($count > 0) {
+                $error = 'You are already registered for this session.';
+            } else {
+                $register_query = "INSERT INTO registers (person_id, event_id, status) VALUES (?, ?, 'Pending')";
+                if (executeQuery($register_query, [$user_id, $session_id])) {
+                    $message = 'Registration successful! You will be notified soon.';
+                    if ($modal_submit) {
+                        $_SESSION['success'] = $message;
+                        header('Location: dashboard.php');
+                        exit();
+                    }
+                } else {
+                    $error = 'Registration failed. Please try again.';
+                }
+            }
+        }
+    } else {
+        if (empty($full_name) || empty($email) || empty($role) || empty($session_id)) {
+            $error = 'All fields are required.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Invalid email format.';
+        } else {
+            $check_query = "SELECT COUNT(*) as count FROM registers WHERE person_id IS NULL AND email = ? AND event_id = ?";
+            $check_stmt = executeQuery($check_query, [$email, $session_id]);
+            $count = $check_stmt->fetch()['count'];
+
+            if ($count > 0) {
+                $error = 'You are already registered for this session with this email.';
+            } else {
+                $register_query = "INSERT INTO registers (person_id, email, event_id, status) VALUES (NULL, ?, ?, 'Pending')";
+                if (executeQuery($register_query, [$email, $session_id])) {
+                    $message = 'Registration successful! Check your email for confirmation.';
+                } else {
+                    $error = 'Registration failed. Please try again.';
+                }
+            }
+        }
+    }
+    if ($error && $modal_submit) {
+        $_SESSION['error'] = $error;
+        header('Location: dashboard.php');
+        exit();
+    }
+}
+
 // Get available mentorship sessions
 $available_sessions_query = "SELECT id, title, date, location, duration FROM mentorship_sessions WHERE date >= CURDATE() ORDER BY date ASC";
 $available_sessions_stmt = executeQuery($available_sessions_query);
@@ -78,138 +143,95 @@ $user_info = isLoggedIn() ? getUserInfo($_SESSION['user_id']) : null;
             padding: 24px;
             transition: all 0.3s ease;
             height: 100%;
-            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
         .mentorship-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
         }
-        .footer {
-            background-color: #002147;
-            color: #fff;
-            padding: 40px 0;
-            font-size: 0.95rem;
-            text-align: center;
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
         }
-        .footer a {
-            color: #aad4ff;
-            text-decoration: none;
-            margin: 0 10px;
-            transition: color 0.3s;
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
         }
-        .footer a:hover {
-            color: #ffffff;
-        }
-        .social-icons img {
-            margin: 0 6px;
-            width: 24px;
-            height: 24px;
-            filter: grayscale(100%);
-            transition: filter 0.3s;
-        }
-        .social-icons img:hover {
-            filter: grayscale(0%);
-        }
-        .btn-outline-purple {
-            border-color: #6f42c1;
-            color: #6f42c1;
-        }
-        .btn-outline-purple:hover {
-            background-color: #6f42c1;
-            color: white;
-        }
-        .mentorship-form {
+        .registration-form {
             max-width: 500px;
             margin: 0 auto;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
     </style>
 </head>
 <body>
-
-<!-- Header -->
 <?php include '../includes/navbar.php'; ?>
 
 <!-- Hero Section -->
 <section class="hero" data-aos="fade-up">
     <div class="container">
-        <h1 class="display-4">Mentorship Opportunities</h1>
-        <p class="lead">Connect with alumni for guidance and career development.</p>
+        <h1 class="display-4">Mentorship Program</h1>
+        <p class="lead">Connect with experienced alumni for guidance and growth.</p>
+        <a href="#register" class="btn btn-primary">Register Now</a>
     </div>
 </section>
 
-<!-- Mentorship Section -->
-<section class="py-5">
+<!-- Registration Section -->
+<section class="py-5" id="register">
     <div class="container">
-        <h2 class="section-title text-navy" data-aos="fade-up">Upcoming Sessions</h2>
-        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
-            <?php if (empty($available_sessions)): ?>
-                <div class="col-12">
-                    <p class="text-center text-muted">No mentorship sessions found.</p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($available_sessions as $session): ?>
-                    <div class="col-md-6">
-                        <div class="mentorship-card h-100">
-                            <h5><?php echo htmlspecialchars($session['title']); ?></h5>
-                            <p><strong>Date:</strong> <?php echo date('M d, Y', strtotime($session['date'])); ?></p>
-                            <p><strong>Location:</strong> <?php echo htmlspecialchars($session['location']); ?></p>
-                            <p><strong>Duration:</strong> <?php echo htmlspecialchars($session['duration']); ?></p>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
+        <?php if ($message): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars($message); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        <?php if ($error): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars($error); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
 
-        <h2 class="section-title text-navy mt-5" data-aos="fade-up">Register for Mentorship</h2>
-        <!-- Alerts for Form Submission -->
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
-                <?php echo htmlspecialchars($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['success']); ?>
-        <?php endif; ?>
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
-                <?php echo htmlspecialchars($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
-        <form class="mentorship-form" action="../pages/register_mentorship.php" method="POST" data-aos="fade-up" data-aos-delay="200">
-            <div class="mb-3">
-                <label for="full_name" class="form-label">Full Name</label>
-                <input type="text" class="form-control" id="full_name" name="full_name"
-                       value="<?php echo $user_info ? htmlspecialchars($user_info['first_name'] . ' ' . $user_info['last_name']) : ''; ?>"
-                    <?php echo $user_info ? 'readonly' : 'required'; ?> />
-            </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email"
-                       value="<?php echo $user_info ? htmlspecialchars($user_info['email']) : ''; ?>"
-                    <?php echo $user_info ? 'readonly' : 'required'; ?> />
-            </div>
-            <div class="mb-3">
-                <label for="role" class="form-label">Role</label>
-                <select class="form-control" id="role" name="role" required>
-                    <option value="">Select Role</option>
-                    <option value="student" <?php echo $user_info && isset($user_info['batch_year']) ? 'selected' : ''; ?>>Student</option>
-                    <option value="alumni" <?php echo $user_info && isset($user_info['grad_year']) ? 'selected' : ''; ?>>Alumni</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="session_id" class="form-label">Session</label>
-                <select class="form-control" id="session_id" name="session_id" required>
-                    <option value="">Select Session</option>
-                    <?php foreach ($available_sessions as $session): ?>
-                        <option value="<?php echo $session['id']; ?>">
-                            <?php echo htmlspecialchars($session['title'] . ' - ' . date('M d, Y', strtotime($session['date']))); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-outline-purple w-100">Register</button>
-        </form>
+        <h2 class="section-title text-navy" data-aos="fade-up">Register for a Mentorship Session</h2>
+        <div class="registration-form" data-aos="fade-up" data-aos-delay="200">
+            <form action="" method="POST">
+                <?php if (!isLoggedIn()): ?>
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required
+                               value="<?php echo htmlspecialchars($full_name ?? ''); ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" name="email" required
+                               value="<?php echo htmlspecialchars($email ?? ''); ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role *</label>
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="student" <?php echo isset($role) && $role == 'student' ? 'selected' : ''; ?>>Student</option>
+                            <option value="alumni" <?php echo isset($role) && $role == 'alumni' ? 'selected' : ''; ?>>Alumni</option>
+                        </select>
+                    </div>
+                <?php endif; ?>
+                <div class="mb-3">
+                    <label for="session_id" class="form-label">Session *</label>
+                    <select class="form-control" id="session_id" name="session_id" required>
+                        <option value="">Select Session</option>
+                        <?php foreach ($available_sessions as $session): ?>
+                            <option value="<?php echo $session['id']; ?>">
+                                <?php echo htmlspecialchars($session['title'] . ' - ' . date('M d, Y', strtotime($session['date'])) . ' (' . $session['location'] . ')'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Register</button>
+            </form>
+        </div>
     </div>
 </section>
 
@@ -220,6 +242,18 @@ $user_info = isLoggedIn() ? getUserInfo($_SESSION['user_id']) : null;
 <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 <script>
     AOS.init({ duration: 1000, once: true });
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const sessionId = document.getElementById('session_id').value;
+                if (!sessionId) {
+                    e.preventDefault();
+                    alert('Please select a session.');
+                }
+            });
+        }
+    });
 </script>
 </body>
 </html>

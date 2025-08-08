@@ -146,6 +146,10 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
         .mentorship-form {
             max-width: 500px;
             margin: 0 auto;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
     </style>
 </head>
@@ -460,7 +464,6 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
                 </div>
             </div>
 
-            <!-- Mentorship Registration Modal -->
             <div class="modal fade" id="mentorshipModal" tabindex="-1" aria-labelledby="mentorshipModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -468,17 +471,32 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
                             <h5 class="modal-title" id="mentorshipModalLabel">Register for Mentorship</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body">
-                            <form class="mentorship-form" action="../pages/register_mentorship.php" method="POST">
+                        <div class="modal-body mentorship-form">
+                            <?php if (isset($_SESSION['success'])): ?>
+                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <?php echo htmlspecialchars($_SESSION['success']); ?>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                                <?php unset($_SESSION['success']); ?>
+                            <?php endif; ?>
+                            <?php if (isset($_SESSION['error'])): ?>
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <?php echo htmlspecialchars($_SESSION['error']); ?>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                                <?php unset($_SESSION['error']); ?>
+                            <?php endif; ?>
+                            <form action="mentorship.php" method="POST">
+                                <input type="hidden" name="modal_submit" value="1">
                                 <div class="mb-3">
                                     <label for="full_name" class="form-label">Full Name</label>
                                     <input type="text" class="form-control" id="full_name" name="full_name"
-                                           value="<?php echo htmlspecialchars($user_info['first_name'] . ' ' . $user_info['last_name']); ?>" required readonly />
+                                           value="<?php echo htmlspecialchars($user_info['first_name'] . ' ' . $user_info['last_name']); ?>" readonly />
                                 </div>
                                 <div class="mb-3">
                                     <label for="email" class="form-label">Email</label>
                                     <input type="email" class="form-control" id="email" name="email"
-                                           value="<?php echo htmlspecialchars($user_info['email']); ?>" required readonly />
+                                           value="<?php echo htmlspecialchars($user_info['email']); ?>" readonly />
                                 </div>
                                 <div class="mb-3">
                                     <label for="role" class="form-label">Role</label>
@@ -512,14 +530,11 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../assets/js/custom.js"></script>
 <script>
-    // Add dashboard-specific JavaScript
     document.addEventListener('DOMContentLoaded', function() {
-        // Auto-refresh dashboard stats every 5 minutes
         setInterval(function() {
             console.log('Dashboard stats refresh');
         }, 300000);
 
-        // Animate counter numbers
         const counters = document.querySelectorAll('.h5');
         counters.forEach(counter => {
             const target = parseInt(counter.textContent);
