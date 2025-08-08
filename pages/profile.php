@@ -344,11 +344,12 @@ if ($user_info) {
             margin-bottom: 1.5rem;
         }
         .card-header {
-            background: linear-gradient(to right, #002147, #0077c8);
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-            padding: 1rem 1.5rem;
-        }
+    background: linear-gradient(to right, #002147, #0077c8);
+    color: #fff !important;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 1rem 1.5rem;
+}
+
         .btn-edit {
             background: #002147;
             border: none;

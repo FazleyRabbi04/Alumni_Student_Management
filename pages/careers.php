@@ -1,10 +1,10 @@
 <?php
-require_once 'config/database.php';
+require_once '../config/database.php';
 startSecureSession();
 
 // If user is logged in, redirect to dashboard
 if (isLoggedIn()) {
-    header('Location: pages/dashboard.php');
+    header('Location: dashboard.php');
     exit();
 }
 ?>
