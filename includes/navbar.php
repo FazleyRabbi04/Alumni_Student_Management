@@ -27,12 +27,20 @@ $current_page = basename($_SERVER['PHP_SELF']);
             color: #f8f9fa !important;
             background-color: rgba(255, 255, 255, 0.1) !important;
         }
+        .navbarDropdown .dropdown-item
+        {
+            background-color: #002147 !important;
+        }
+        .navbarDropdown .dropdown-item:hover
+        {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
     </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
     <div class="container-fluid px-4">
-        <a class="navbar-brand" href="<?php echo isLoggedIn() ? '../pages/dashboard.php' : '../pages/home.php'; ?>">
+        <a class="navbar-brand" href="../pages/home.php">
             <i class="fas fa-graduation-cap me-2"></i>Alumni Relationship & Networking System
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,11 +48,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </button>
         <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'home.php' ? 'active' : ''; ?>" href="<?php echo isLoggedIn() ? '../pages/dashboard.php' : '../pages/home.php'; ?>">
-                        <i class="fas fa-home me-1"></i>Home
-                    </a>
-                </li>
                 <?php if (isLoggedIn()): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -73,5 +76,25 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </div>
 </nav>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdownToggle = document.querySelector('#navbarDropdown');
+        if (dropdownToggle) {
+            dropdownToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dropdown = new bootstrap.Dropdown(dropdownToggle);
+                dropdown.toggle();
+            });
+        }
+        const registerToggle = document.querySelector('#registerDropdown');
+        if (registerToggle) {
+            registerToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dropdown = new bootstrap.Dropdown(registerToggle);
+                dropdown.toggle();
+            });
+        }
+    });
+</script>
 </body>
 </html>

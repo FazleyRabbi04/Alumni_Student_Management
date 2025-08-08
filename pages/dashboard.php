@@ -86,9 +86,6 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
             background-color: #faf5f6;
             color: #002147;
         }
-        .bg-navy {
-            background-color: #002147;
-        }
         .dashboard-card {
             border: none;
             border-radius: 10px;
@@ -132,21 +129,8 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
             align-items: center;
             text-align: center;
         }
-        .list-group-item .d-flex {
-            flex-direction: column;
-            align-items: center;
-        }
         .list-group-item .badge {
             margin-top: 0.5rem;
-        }
-        .action-link {
-            color: #003087;
-            font-weight: 700;
-            text-decoration: underline;
-        }
-        .action-link:hover {
-            color: #002147;
-            text-decoration: underline;
         }
         .btn-outline-primary, .btn-outline-success, .btn-outline-warning, .btn-outline-info, .btn-outline-purple {
             border-radius: 10px;
@@ -166,11 +150,12 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
     </style>
 </head>
 <body>
+
 <?php include '../includes/navbar.php'; ?>
 
 <div class="container-fluid">
     <div class="row">
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <main class="col-12 px-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2 text-center w-100">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
@@ -513,7 +498,7 @@ $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetch
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <button type="submit" class="btn btn-outline-purple w-100">Register</button>
+                                <button type="submit" class="btn btn-outline-purple btn-lg w-100">Register</button>
                             </form>
                         </div>
                     </div>
