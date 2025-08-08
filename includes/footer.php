@@ -27,7 +27,7 @@
             <a href="events.php">Events</a>
             <a href="mentorship.php">Mentorship</a>
             <a href="jobs.php">Jobs</a>
-            <a href="terms.php">Terms</a>
+            <a href="../pages/terms.php">Terms</a>
             <a href="privacy.php">Privacy</a>
         </div>
         <p class="small mb-0">&copy; 2025 ABC University. All rights reserved.</p>
