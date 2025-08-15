@@ -1,25 +1,41 @@
 <?php
 require_once '../config/database.php';
 startSecureSession();
-
-// Require user to be logged in edit
 requireLogin();
 
-$user_id = $_SESSION['user_id'];
-if (isset($_GET['cancel_edit'])) {
-    $edit_mode = false;
-    unset($_SESSION['edit_mode']);
+$user_id = $_SESSION['user_id'] ?? null;
+if (!$user_id) {
+    header('Location: ../pages/signin.php');
+    exit();
 }
+
+/* ---------- helpers ---------- */
+function isAjax(): bool {
+    return (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+        || (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+}
+function jsonOut($ok, $msg = '', $extra = []) {
+    header('Content-Type: application/json');
+    echo json_encode(array_merge(['ok' => $ok, 'message' => $msg], $extra));
+    exit;
+}
+
+/* ---------- state ---------- */
 $error = '';
 $success = '';
 $edit_mode = $_SESSION['edit_mode'] ?? false;
 
-// Get user informations
+/* One-time auto prompt if coming from dashboard card (?prompt_edit=1) */
+$auto_prompt_edit  = (isset($_GET['prompt_edit']) && !$edit_mode);
+$show_verify_modal = false;
+
+/* ---------- load user ---------- */
 $user_info = getUserInfo($user_id);
 if (!$user_info) {
     $error = 'Unable to load user profile.';
 }
-// Define user type here so it's available for POST processing
+
+/* user type */
 $user_type = '';
 $year_info = '';
 if ($user_info) {
@@ -32,386 +48,401 @@ if ($user_info) {
     }
 }
 
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['action'])) {
-        if ($_POST['action'] == 'enable_edit') {
-            // Verify password to enable edit mode
-            $current_password = $_POST['verify_password'];
-            $user_query = "SELECT password FROM person WHERE person_id = ?";
-            $user_stmt = executeQuery($user_query, [$user_id]);
+/* ---------- handle post ---------- */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
 
-            if ($user_stmt && $user_stmt->rowCount() > 0) {
-                $user_data = $user_stmt->fetch();
-                if (password_verify($current_password, $user_data['password'])) {
-                    $edit_mode = true;
-                    $_SESSION['edit_mode'] = true;
-                    $success = 'Edit mode enabled. You can now modify your information.';
+    /* 1) enable edit (password gate) */
+    if ($action === 'enable_edit') {
+        $current_password = $_POST['verify_password'] ?? '';
+        $user_stmt = executeQuery("SELECT password FROM person WHERE person_id = ?", [$user_id]);
+        if ($user_stmt && $user_stmt->rowCount()) {
+            $hash = $user_stmt->fetchColumn();
+            if (password_verify($current_password, $hash)) {
+                $_SESSION['edit_mode'] = true;
+                if (isAjax()) jsonOut(true, 'Edit mode enabled');
+                header('Location: profile.php'); // PRG; keep URL clean
+                exit;
+            }
+        }
+        $error = 'Incorrect password. Please try again.';
+        $show_verify_modal = true;
+        if (isAjax()) jsonOut(false, $error);
+    }
+
+    /* 2) update profile (auto-save; no buttons) */
+    if ($action === 'update_profile') {
+        $first_name   = trim($_POST['first_name'] ?? '');
+        $last_name    = trim($_POST['last_name'] ?? '');
+        $street       = trim($_POST['street'] ?? '');
+        $city         = trim($_POST['city'] ?? '');
+        $zip          = trim($_POST['zip'] ?? '');
+        $gender       = $_POST['gender'] ?? '';
+        $date_of_birth= $_POST['date_of_birth'] ?? '';
+        $department   = trim($_POST['department'] ?? '');
+
+        if ($first_name === '' || $last_name === '') {
+            $msg = 'First name and last name are required.';
+            if (isAjax()) jsonOut(false, $msg);
+            $error = $msg;
+        } else {
+            try {
+                $ok = executeQuery(
+                    "UPDATE person
+                     SET first_name=?, last_name=?, street=?, city=?, zip=?, gender=?, department=?, date_of_birth=?
+                     WHERE person_id=?",
+                    [$first_name, $last_name, $street, $city, $zip, $gender, $department, $date_of_birth, $user_id]
+                );
+                if ($ok) {
+                    $_SESSION['user_name'] = $first_name.' '.$last_name;
+                    if (isAjax()) jsonOut(true, 'Saved');
+                    $success = 'Profile saved.';
                 } else {
-                    $error = 'Incorrect password. Please try again.';
+                    if (isAjax()) jsonOut(false, 'Nothing changed.');
+                    $error = 'Nothing changed.';
                 }
-            }
-        } elseif ($_POST['action'] == 'update_profile') {
-            // Update profile information
-            $first_name = trim($_POST['first_name']);
-            $last_name = trim($_POST['last_name']);
-            $street = trim($_POST['street']);
-            $city = trim($_POST['city']);
-            $zip = trim($_POST['zip']);
-            $gender = $_POST['gender'];
-            $department = trim($_POST['department']);
-            $date_of_birth = $_POST['date_of_birth'];
-
-            if (empty($first_name) || empty($last_name)) {
-                $error = 'First name and last name are required.';
-            } else {
-                try {
-                    $update_query = "UPDATE person SET first_name = ?, last_name = ?, street = ?, city = ?, zip = ?, gender = ?, department = ?, date_of_birth = ? WHERE person_id = ?";
-                    $update_stmt = executeQuery($update_query, [
-                        $first_name, $last_name, $street, $city, $zip,
-                        $gender, $department, $date_of_birth, $user_id
-                    ]);
-
-                    if ($update_stmt) {
-                        $success = 'Profile updated successfully!';
-                        $_SESSION['user_name'] = $first_name . ' ' . $last_name;
-                        $edit_mode = true;
-                        $_SESSION['edit_mode'] = true;
-                        // Handle role shifting (Student → Alumni)
-                        $shift_role = $_POST['shift_role'] ?? '';
-
-                        if ($shift_role === 'Alumni' && $user_type === 'Student') {
-                            try {
-                                // Get batch year from student table (optional)
-                                $batch_stmt = executeQuery("SELECT batch_year FROM student WHERE person_id = ?", [$user_id]);
-                                $batch_year = ($batch_stmt && $batch_stmt->rowCount() > 0) ? $batch_stmt->fetchColumn() : null;
-
-                                $input_grad_year = $_POST['grad_year'] ?? '';
-
-                                if (!preg_match('/^\d{4}$/', $input_grad_year) || $input_grad_year > date('Y') || $input_grad_year < 1950) {
-                                    $error = 'Please enter a valid graduation year.';
-                                } else {
-                                    // Proceed with shifting
-                                    $grad_year = $input_grad_year;
-
-                                    $insert_alumni = executeQuery(
-                                        "INSERT INTO alumni (person_id, grad_year) VALUES (?, ?)",
-                                        [$user_id, $grad_year]
-                                    );
-
-                                    if ($insert_alumni) {
-                                        executeQuery("DELETE FROM student WHERE person_id = ?", [$user_id]);
-                                        $user_type = 'Alumni';
-                                        $year_info = $grad_year;
-                                        $success .= ' Your role has been shifted to Alumni.';
-                                    } else {
-                                        $error .= ' Profile updated, but failed to shift role.';
-                                    }
-                                }
-                            } catch (Exception $e) {
-                                $error .= ' Error while shifting role: ' . $e->getMessage();
-                            }
-                        }
-                    } else {
-                        $error = 'Failed to update profile. Please try again.';
-                    }
-                } catch (Exception $e) {
-                    $error = 'Error updating profile: ' . $e->getMessage();
-                }
-            }
-        } elseif ($_POST['action'] == 'add_education') {
-            // Add education record
-            $degree = trim($_POST['degree']);
-            $institution = trim($_POST['institution']);
-            $start_date = $_POST['edu_start_date'];
-            $end_date = $_POST['edu_end_date'] ?: null;
-
-            if (!empty($degree) && !empty($institution) && !empty($start_date)) {
-                try {
-                    $edu_query = "INSERT INTO education_history (person_id, degree, institution, start_date, end_date) VALUES (?, ?, ?, ?, ?)";
-                    $edu_stmt = executeQuery($edu_query, [$user_id, $degree, $institution, $start_date, $end_date]);
-
-                    if ($edu_stmt) {
-                        $success = 'Education record added successfully!';
-                        $edit_mode = true;
-                        $_SESSION['edit_mode'] = true;
-                    } else {
-                        $error = 'Failed to add education record.';
-                    }
-                } catch (Exception $e) {
-                    $error = 'Error adding education: ' . $e->getMessage();
-                }
-            } else {
-                $error = 'Please fill in all required education fields.';
-            }
-        } elseif ($_POST['action'] == 'add_employment') {
-            // Add employment record
-            $job_title = trim($_POST['job_title']);
-            $company = trim($_POST['company']);
-            $designation = trim($_POST['designation']);
-            $emp_start_date = $_POST['emp_start_date'];
-            $emp_end_date = $_POST['emp_end_date'] ?: null;
-
-            if (!empty($job_title) && !empty($company) && !empty($emp_start_date)) {
-                try {
-                    $emp_query = "INSERT INTO employment_history (person_id, job_title, company, designation, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)";
-                    $emp_stmt = executeQuery($emp_query, [$user_id, $job_title, $company, $designation, $emp_start_date, $emp_end_date]);
-
-                    if ($emp_stmt) {
-                        $success = 'Employment record added successfully!';
-                        $edit_mode = true;
-                        $_SESSION['edit_mode'] = true;
-                    } else {
-                        $error = 'Failed to add employment record.';
-                    }
-                } catch (Exception $e) {
-                    $error = 'Error adding employment: ' . $e->getMessage();
-                }
-            } else {
-                $error = 'Please fill in all required employment fields.';
-            }
-        } elseif ($_POST['action'] == 'add_achievement') {
-            // Add achievement record
-            $ach_title = trim($_POST['ach_title']);
-            $ach_date = $_POST['ach_date'];
-            $organization = trim($_POST['organization']);
-            $description = trim($_POST['description']);
-            $type = $_POST['type'];
-
-            if (!empty($ach_title) && !empty($ach_date)) {
-                try {
-                    $ach_query = "INSERT INTO achievement (person_id, ach_title, ach_date, organization, description, type) VALUES (?, ?, ?, ?, ?, ?)";
-                    $ach_stmt = executeQuery($ach_query, [$user_id, $ach_title, $ach_date, $organization, $description, $type]);
-
-                    if ($ach_stmt) {
-                        $success = 'Achievement added successfully!';
-                        $edit_mode = true;
-                        $_SESSION['edit_mode'] = true;
-                    } else {
-                        $error = 'Failed to add achievement.';
-                    }
-                } catch (Exception $e) {
-                    $error = 'Error adding achievement: ' . $e->getMessage();
-                }
-            } else {
-                $error = 'Please fill in all required achievement fields.';
-            }
-        } elseif ($_POST['action'] == 'add_email') {
-            // Add secondary email
-            $new_email = trim($_POST['new_email']);
-            if (!empty($new_email) && filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
-                try {
-                    // Check if email already exists
-                    $check_query = "SELECT email FROM email_address WHERE email = ?";
-                    $check_stmt = executeQuery($check_query, [$new_email]);
-                    if ($check_stmt && $check_stmt->rowCount() > 0) {
-                        $error = 'This email is already in use.';
-                    } else {
-                        $email_query = "INSERT INTO email_address (person_id, email) VALUES (?, ?)";
-                        $email_stmt = executeQuery($email_query, [$user_id, $new_email]);
-                        if ($email_stmt) {
-                            $success = 'Email added successfully!';
-                            $edit_mode = true;
-                            $_SESSION['edit_mode'] = true;
-                        } else {
-                            $error = 'Failed to add email.';
-                        }
-                    }
-                } catch (Exception $e) {
-                    $error = 'Error adding email: ' . $e->getMessage();
-                }
-            } else {
-                $error = 'Please provide a valid email address.';
-            }
-        } elseif ($_POST['action'] == 'add_phone') {
-            // Add secondary phone
-            $new_phone = trim($_POST['new_phone']);
-            if (!empty($new_phone) && preg_match('/^[0-9+\-\s]{10,15}$/', $new_phone)) {
-                try {
-                    // Check if phone already exists
-                    $check_query = "SELECT phone_number FROM person_phone WHERE phone_number = ?";
-                    $check_stmt = executeQuery($check_query, [$new_phone]);
-                    if ($check_stmt && $check_stmt->rowCount() > 0) {
-                        $error = 'This phone number is already in use.';
-                    } else {
-                        $phone_query = "INSERT INTO person_phone (person_id, phone_number) VALUES (?, ?)";
-                        $phone_stmt = executeQuery($phone_query, [$user_id, $new_phone]);
-                        if ($phone_stmt) {
-                            $success = 'Phone number added successfully!';
-                            $edit_mode = true;
-                            $_SESSION['edit_mode'] = true;
-                        } else {
-                            $error = 'Failed to add phone number.';
-                        }
-                    }
-                } catch (Exception $e) {
-                    $error = 'Error adding phone: ' . $e->getMessage();
-                }
-            } else {
-                $error = 'Please provide a valid phone number (10-15 digits, +, -, or spaces).';
+            } catch (Exception $e) {
+                if (isAjax()) jsonOut(false, 'Error: '.$e->getMessage());
+                $error = 'Error updating profile: '.$e->getMessage();
             }
         }
     }
-}
 
-// Get all user emails
-$emails = [];
-if ($user_info) {
-    $email_query = "SELECT email FROM email_address WHERE person_id = ?";
-    $email_stmt = executeQuery($email_query, [$user_id]);
-    if ($email_stmt) {
-        $emails = $email_stmt->fetchAll(PDO::FETCH_COLUMN);
+    /* 3) add secondary email */
+    if ($action === 'add_email') {
+        $new_email = trim($_POST['new_email'] ?? '');
+        if (!filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
+            $msg = 'Please provide a valid email address.';
+            if (isAjax()) jsonOut(false, $msg);
+            $error = $msg;
+        } else {
+            $exists = executeQuery("SELECT 1 FROM email_address WHERE email=?", [$new_email]);
+            if ($exists && $exists->rowCount()) {
+                $msg = 'This email is already in use.';
+                if (isAjax()) jsonOut(false, $msg);
+                $error = $msg;
+            } else {
+                $ok = executeQuery("INSERT INTO email_address (person_id, email) VALUES (?,?)", [$user_id, $new_email]);
+                if ($ok) {
+                    if (isAjax()) jsonOut(true, 'Email added');
+                    $success = 'Email added successfully!';
+                } else {
+                    if (isAjax()) jsonOut(false, 'Failed to add email.');
+                    $error = 'Failed to add email.';
+                }
+            }
+        }
+    }
+
+    /* 4) add secondary phone */
+    if ($action === 'add_phone') {
+        $new_phone = trim($_POST['new_phone'] ?? '');
+        if ($new_phone === '' || !preg_match('/^[0-9+\-\s]{10,15}$/', $new_phone)) {
+            $msg = 'Please provide a valid phone number (10-15 digits, +, -, or spaces).';
+            if (isAjax()) jsonOut(false, $msg);
+            $error = $msg;
+        } else {
+            $exists = executeQuery("SELECT 1 FROM person_phone WHERE phone_number=?", [$new_phone]);
+            if ($exists && $exists->rowCount()) {
+                $msg = 'This phone number is already in use.';
+                if (isAjax()) jsonOut(false, $msg);
+                $error = $msg;
+            } else {
+                $ok = executeQuery("INSERT INTO person_phone (person_id, phone_number) VALUES (?,?)", [$user_id, $new_phone]);
+                if ($ok) {
+                    if (isAjax()) jsonOut(true, 'Phone added');
+                    $success = 'Phone number added successfully!';
+                } else {
+                    if (isAjax()) jsonOut(false, 'Failed to add phone.');
+                    $error = 'Failed to add phone number.';
+                }
+            }
+        }
+    }
+
+    /* 5) education/employment/achievement (unchanged) */
+    if ($action === 'add_education') {
+        $degree = trim($_POST['degree'] ?? '');
+        $institution = trim($_POST['institution'] ?? '');
+        $start = $_POST['edu_start_date'] ?? '';
+        $end   = $_POST['edu_end_date'] ?: null;
+        if ($degree && $institution && $start) {
+            $ok = executeQuery(
+                "INSERT INTO education_history (person_id, degree, institution, start_date, end_date)
+                 VALUES (?,?,?,?,?)",
+                [$user_id, $degree, $institution, $start, $end]
+            );
+            if ($ok) { $success = 'Education record added successfully!'; if (isAjax()) jsonOut(true,'Added'); }
+            else { $error='Failed to add education record.'; if (isAjax()) jsonOut(false,$error); }
+        } else { $error='Please fill in all required education fields.'; if (isAjax()) jsonOut(false,$error); }
+    }
+    if ($action === 'add_employment') {
+        $job = trim($_POST['job_title'] ?? '');
+        $company = trim($_POST['company'] ?? '');
+        $designation = trim($_POST['designation'] ?? '');
+        $start = $_POST['emp_start_date'] ?? '';
+        $end   = $_POST['emp_end_date'] ?: null;
+        if ($job && $company && $start) {
+            $ok = executeQuery(
+                "INSERT INTO employment_history (person_id, job_title, company, designation, start_date, end_date)
+                 VALUES (?,?,?,?,?,?)",
+                [$user_id, $job, $company, $designation, $start, $end]
+            );
+            if ($ok) { $success = 'Employment record added successfully!'; if (isAjax()) jsonOut(true,'Added'); }
+            else { $error='Failed to add employment record.'; if (isAjax()) jsonOut(false,$error); }
+        } else { $error='Please fill in all required employment fields.'; if (isAjax()) jsonOut(false,$error); }
+    }
+    if ($action === 'add_achievement') {
+        $title = trim($_POST['ach_title'] ?? '');
+        $date  = $_POST['ach_date'] ?? '';
+        $org   = trim($_POST['organization'] ?? '');
+        $desc  = trim($_POST['description'] ?? '');
+        $type  = $_POST['type'] ?? '';
+        if ($title && $date) {
+            $ok = executeQuery(
+                "INSERT INTO achievement (person_id, ach_title, ach_date, organization, description, type)
+                 VALUES (?,?,?,?,?,?)",
+                [$user_id, $title, $date, $org, $desc, $type]
+            );
+            if ($ok) { $success='Achievement added successfully!'; if (isAjax()) jsonOut(true,'Added'); }
+            else { $error='Failed to add achievement.'; if (isAjax()) jsonOut(false,$error); }
+        } else { $error='Please fill in all required achievement fields.'; if (isAjax()) jsonOut(false,$error); }
+    }
+
+    /* 6) SKILLS (JSON in person_skill.skill) */
+    if ($action === 'add_skill' || $action === 'update_skill' || $action === 'delete_skill') {
+        // fetch current JSON
+        $row = executeQuery("SELECT skill FROM person_skill WHERE person_id=?", [$user_id]);
+        $skills_json = ($row && $row->rowCount()) ? $row->fetchColumn() : '[]';
+        $skills = json_decode($skills_json, true);
+        if (!is_array($skills)) $skills = [];
+
+        if ($action === 'add_skill') {
+            $name  = trim($_POST['skill_name'] ?? '');
+            $level = (int)($_POST['skill_level'] ?? 70);
+            if ($name === '') { if (isAjax()) jsonOut(false,'Skill name required'); $error='Skill name required.'; }
+            else {
+                // prevent duplicates by name (case-insensitive)
+                $exists = false;
+                foreach ($skills as $s) { if (strcasecmp($s['name'], $name) === 0) { $exists=true; break; } }
+                if ($exists) { if (isAjax()) jsonOut(false,'Skill already exists'); $error='Skill already exists.'; }
+                else {
+                    $skills[] = ['name'=>$name,'level'=>max(0,min(100,$level))];
+                    $ok = executeQuery(
+                        "INSERT INTO person_skill (person_id, skill) VALUES (?,?)
+                         ON DUPLICATE KEY UPDATE skill=VALUES(skill)",
+                        [$user_id, json_encode($skills)]
+                    );
+                    if ($ok) { if (isAjax()) jsonOut(true,'Skill added'); $success='Skill added.'; }
+                    else { if (isAjax()) jsonOut(false,'Failed to add skill'); $error='Failed to add skill.'; }
+                }
+            }
+        }
+
+        if ($action === 'update_skill') {
+            $old = trim($_POST['old_name'] ?? '');
+            $name = trim($_POST['skill_name'] ?? '');
+            $level = (int)($_POST['skill_level'] ?? 70);
+            $updated = false;
+            foreach ($skills as &$s) {
+                if (strcasecmp($s['name'], $old) === 0) {
+                    $s['name'] = $name !== '' ? $name : $s['name'];
+                    $s['level'] = max(0,min(100,$level));
+                    $updated = true;
+                    break;
+                }
+            }
+            if ($updated) {
+                $ok = executeQuery(
+                    "INSERT INTO person_skill (person_id, skill) VALUES (?,?)
+                     ON DUPLICATE KEY UPDATE skill=VALUES(skill)",
+                    [$user_id, json_encode($skills)]
+                );
+                if ($ok) { if (isAjax()) jsonOut(true,'Skill updated'); $success='Skill updated.'; }
+                else { if (isAjax()) jsonOut(false,'Failed to update'); $error='Failed to update skill.'; }
+            } else {
+                if (isAjax()) jsonOut(false,'Skill not found'); $error='Skill not found.';
+            }
+        }
+
+        if ($action === 'delete_skill') {
+            $name = trim($_POST['skill_name'] ?? '');
+            $before = count($skills);
+            $skills = array_values(array_filter($skills, fn($s) => strcasecmp($s['name'],$name)!==0));
+            if (count($skills) === $before) {
+                if (isAjax()) jsonOut(false,'Skill not found'); $error='Skill not found.';
+            } else {
+                $ok = executeQuery(
+                    "INSERT INTO person_skill (person_id, skill) VALUES (?,?)
+                     ON DUPLICATE KEY UPDATE skill=VALUES(skill)",
+                    [$user_id, json_encode($skills)]
+                );
+                if ($ok) { if (isAjax()) jsonOut(true,'Skill removed'); $success='Skill removed.'; }
+                else { if (isAjax()) jsonOut(false,'Failed to remove'); $error='Failed to remove skill.'; }
+            }
+        }
+    }
+
+    /* 7) INTERESTS (M2M tables, no level) */
+    if ($action === 'add_interest' || $action === 'remove_interest') {
+        $link_table = ($user_type === 'Alumni') ? 'alumni_interest' : 'student_interest';
+
+        if ($action === 'add_interest') {
+            $interest_id = (int)($_POST['interest_id'] ?? 0);
+            $new_name    = trim($_POST['interest_name'] ?? '');
+
+            if ($interest_id <= 0 && $new_name === '') {
+                if (isAjax()) jsonOut(false,'Pick or enter an interest');
+                $error = 'Pick or enter an interest.'; 
+            } else {
+                // If a name is provided, ensure it exists in interest table
+                if ($new_name !== '') {
+                    // insert ignore unique
+                    executeQuery("INSERT INTO interest (interest_name) VALUES (?) ON DUPLICATE KEY UPDATE interest_name=VALUES(interest_name)", [$new_name]);
+                    $get = executeQuery("SELECT interest_id FROM interest WHERE interest_name=?", [$new_name]);
+                    $interest_id = (int)$get->fetchColumn();
+                }
+                // link (ignore duplicates)
+                executeQuery("INSERT IGNORE INTO {$link_table} (person_id, interest_id) VALUES (?,?)", [$user_id, $interest_id]);
+                if (isAjax()) jsonOut(true,'Interest added');
+                $success = 'Interest added.';
+            }
+        } else { // remove_interest
+            $interest_id = (int)($_POST['interest_id'] ?? 0);
+            if ($interest_id > 0) {
+                executeQuery("DELETE FROM {$link_table} WHERE person_id=? AND interest_id=?", [$user_id, $interest_id]);
+                if (isAjax()) jsonOut(true,'Interest removed');
+                $success = 'Interest removed.';
+            } else {
+                if (isAjax()) jsonOut(false,'Invalid interest');
+                $error = 'Invalid interest.';
+            }
+        }
+    }
+
+    /* stop double posting on normal form posts */
+    if (!isAjax()) {
+        header('Location: profile.php');
+        exit;
     }
 }
 
-// Get all user phone numbers
+/* ---------- cancel edit (from query) ---------- */
+if (isset($_GET['cancel_edit'])) {
+    unset($_SESSION['edit_mode']);
+    $edit_mode = false;
+}
+
+/* ---------- load page data ---------- */
+/* Emails & Phones */
+$emails = [];
 $phones = [];
 if ($user_info) {
-    $phone_query = "SELECT phone_number FROM person_phone WHERE person_id = ?";
-    $phone_stmt = executeQuery($phone_query, [$user_id]);
-    if ($phone_stmt) {
-        $phones = $phone_stmt->fetchAll(PDO::FETCH_COLUMN);
-    }
+    $email_stmt = executeQuery("SELECT email FROM email_address WHERE person_id=?", [$user_id]);
+    if ($email_stmt) $emails = $email_stmt->fetchAll(PDO::FETCH_COLUMN);
+    $phone_stmt = executeQuery("SELECT phone_number FROM person_phone WHERE person_id=?", [$user_id]);
+    if ($phone_stmt) $phones = $phone_stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 
-// Get education history
+/* Education, Employment, Achievements */
 $education_history = [];
-if ($user_info) {
-    $education_query = "SELECT * FROM education_history WHERE person_id = ? ORDER BY start_date DESC";
-    $education_stmt = executeQuery($education_query, [$user_id]);
-    if ($education_stmt) {
-        $education_history = $education_stmt->fetchAll();
-    }
-}
-
-// Get employment history
 $employment_history = [];
-if ($user_info) {
-    $employment_query = "SELECT * FROM employment_history WHERE person_id = ? ORDER BY start_date DESC";
-    $employment_stmt = executeQuery($employment_query, [$user_id]);
-    if ($employment_stmt) {
-        $employment_history = $employment_stmt->fetchAll();
-    }
-}
-
-// Get achievements
 $achievements = [];
 if ($user_info) {
-    $achievement_query = "SELECT * FROM achievement WHERE person_id = ? ORDER BY ach_date DESC";
-    $achievement_stmt = executeQuery($achievement_query, [$user_id]);
-    if ($achievement_stmt) {
-        $achievements = $achievement_stmt->fetchAll();
-    }
+    $ed = executeQuery("SELECT * FROM education_history WHERE person_id=? ORDER BY start_date DESC", [$user_id]);
+    if ($ed) $education_history = $ed->fetchAll(PDO::FETCH_ASSOC);
+    $em = executeQuery("SELECT * FROM employment_history WHERE person_id=? ORDER BY start_date DESC", [$user_id]);
+    if ($em) $employment_history = $em->fetchAll(PDO::FETCH_ASSOC);
+    $ac = executeQuery("SELECT * FROM achievement WHERE person_id=? ORDER BY ach_date DESC", [$user_id]);
+    if ($ac) $achievements = $ac->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/* Skills JSON */
+$skills = [];
+$skills_row = executeQuery("SELECT skill FROM person_skill WHERE person_id=?", [$user_id]);
+if ($skills_row && $skills_row->rowCount()) {
+    $skills = json_decode($skills_row->fetchColumn(), true);
+    if (!is_array($skills)) $skills = [];
+}
+
+/* Interests list + user interests */
+$all_interests = [];
+$int_stmt = executeQuery("SELECT interest_id, interest_name FROM interest ORDER BY interest_name ASC");
+if ($int_stmt) $all_interests = $int_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$link_table = ($user_type === 'Alumni') ? 'alumni_interest' : 'student_interest';
+$user_interests = [];
+$ui_stmt = executeQuery(
+    "SELECT i.interest_id, i.interest_name
+     FROM {$link_table} li
+     JOIN interest i ON i.interest_id = li.interest_id
+     WHERE li.person_id=?
+     ORDER BY i.interest_name ASC",
+    [$user_id]
+);
+if ($ui_stmt) $user_interests = $ui_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+/* modal auto open logic */
+if (!$edit_mode) {
+    $show_verify_modal = $show_verify_modal || $auto_prompt_edit;
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - Alumni Relationship & Networking System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: #faf5f6;
-            color: #002147;
+<meta charset="UTF-8">
+<title>My Profile - Alumni Relationship & Networking System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    body{font-family:'Open Sans',sans-serif;background:#faf5f6;color:#002147;}
+    .profile-header{background:linear-gradient(to right,#002147,#0077c8);color:#fff;padding:2rem 0;}
+    .profile-avatar{width:120px;height:120px;border-radius:50%;border:4px solid #fff;background:#fff;display:flex;align-items:center;justify-content:center;font-size:3rem;color:#002147;margin:0 auto 1rem;}
+    .card{border:none;border-radius:15px;box-shadow:0 2px 10px rgba(0,0,0,.1);margin-bottom:1.5rem;}
+    .card-header{background:linear-gradient(to right,#002147,#0077c8);color:#fff;border-radius:15px 15px 0 0;padding:1rem 1.5rem;}
+    .btn-edit{background:#002147;border:none;color:#fff;border-radius:25px;padding:.5rem 1.5rem}
+    .btn-edit:hover{background:#002147;color:#fff;}
+    .readonly-field{background:#e9ecef;cursor:not-allowed;}
+    .edit-section{border:2px dashed #002147;border-radius:10px;padding:1rem;margin-top:1rem;background:#f8f9ff;}
+    .action-link{color:#003087;font-weight:700;text-decoration:underline;}
+    .action-link:hover{color:#002147;text-decoration:underline;}
+    /* progress bar labels */
+    .skill-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+    .skill-name{min-width:140px;font-weight:600}
+    .tag{display:inline-flex;align-items:center;gap:8px;background:#eef2ff;border:1px solid #c7d2fe;color:#1e40af;border-radius:999px;padding:.35rem .6rem;margin:.2rem .3rem;font-weight:600}
+    .tag .x{cursor:pointer;color:#1e40af;}
+    .save-badge{display:none; margin-left:10px;}
+    /* Force all card header titles and icons to render white */
+        .card-header h1,
+        .card-header h2,
+        .card-header h3,
+        .card-header h4,
+        .card-header h5,
+        .card-header h6,
+        .card-header i {
+        color: #fff !important;
         }
-        .profile-header {
-            background: linear-gradient(to right, #002147, #0077c8);
-            color: white;
-            padding: 2rem 0;
-        }
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            border: 4px solid white;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: #002147;
-            margin: 0 auto 1rem;
-        }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 1.5rem;
-        }
-        .card-header {
-    background: linear-gradient(to right, #002147, #0077c8);
-    color: #fff !important;
-    border-radius: 15px 15px 0 0 !important;
-    padding: 1rem 1.5rem;
-}
 
-        .btn-edit {
-            background: #002147;
-            border: none;
-            color: white;
-            border-radius: 25px;
-            padding: 0.5rem 1.5rem;
-            transition: all 0.3s;
-        }
-        .btn-edit:hover {
-            background: #002147;
-            color: white;
-        }
-        .readonly-field {
-            background-color: #e9ecef;
-            cursor: not-allowed;
-        }
-        .edit-section {
-            border: 2px dashed #002147;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-top: 1rem;
-            background-color: #f8f9ff;
-        }
-        .contact-list {
-            list-style: none;
-            padding: 0;
-        }
-        .contact-list li {
-            margin-bottom: 0.5rem;
-        }
-        .action-link {
-            color: #003087;
-            font-weight: 700;
-            text-decoration: underline;
-        }
-        .action-link:hover {
-            color: #002147;
-            text-decoration: underline;
-        }
-        .bg-navy {
-            background-color: #002147;
-        }
-    </style>
+</style>
 </head>
 <body>
 
 <?php include '../includes/navbar.php'; ?>
 
-<!-- Profile Header -->
+<!-- Header -->
 <div class="profile-header">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-md-3 text-center">
-                <div class="profile-avatar">
-                    <i class="fas fa-user"></i>
-                </div>
+                <div class="profile-avatar"><i class="fas fa-user"></i></div>
             </div>
             <div class="col-md-6">
-                <h2><?php echo htmlspecialchars($user_info['first_name'] . ' ' . $user_info['last_name']); ?></h2>
-                <p class="mb-1"><i class="fas fa-graduation-cap me-2"></i><?php echo htmlspecialchars($user_type . ' - ' . $year_info); ?></p>
-                <p class="mb-1"><i class="fas fa-building me-2"></i><?php echo htmlspecialchars($user_info['department']); ?></p>
-                <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i><?php echo htmlspecialchars($user_info['city'] ?? ''); ?></p>
+                <h2><?= htmlspecialchars(($user_info['first_name'] ?? '').' '.($user_info['last_name'] ?? '')) ?></h2>
+                <p class="mb-1"><i class="fas fa-graduation-cap me-2"></i><?= htmlspecialchars($user_type.($year_info?(' - '.$year_info):'')) ?></p>
+                <p class="mb-1"><i class="fas fa-building me-2"></i><?= htmlspecialchars($user_info['department'] ?? ''); ?></p>
+                <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i><?= htmlspecialchars($user_info['city'] ?? ''); ?></p>
             </div>
             <div class="col-md-3 text-end">
                 <?php if (!$edit_mode): ?>
@@ -419,11 +450,9 @@ if ($user_info) {
                         <i class="fas fa-edit me-2"></i>Edit Profile
                     </button>
                 <?php else: ?>
-                    <span class="badge bg-success fs-6">
-                        <i class="fas fa-check me-1"></i>Edit Mode Active
-                    </span>
-                    <a href="profile.php?cancel_edit=1" class="btn btn-outline-danger mt-2">
-                        <i class="fas fa-times-circle me-1"></i>Exit Edit Mode
+                    <span class="badge bg-success fs-6"><i class="fas fa-check me-1"></i>Edit Mode Active</span>
+                    <a href="profile.php?cancel_edit=1" class="btn btn-outline-light mt-2">
+                        <i class="fas fa-times-circle me-1"></i>Save Changes
                     </a>
                 <?php endif; ?>
             </div>
@@ -432,25 +461,25 @@ if ($user_info) {
 </div>
 
 <div class="container mt-4">
-    <?php if (!empty($error)): ?>
+    <?php if ($error): ?>
         <div class="alert alert-danger alert-dismissible fade show">
-            <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($error); ?>
+            <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
-
-    <?php if (!empty($success)): ?>
+    <?php if ($success): ?>
         <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($success); ?>
+            <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success) ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
 
     <div class="row">
-        <!-- Personal Information -->
+        <!-- Left -->
         <div class="col-lg-8">
+            <!-- Personal Information -->
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex align-items-center justify-content-between">
                     <h5 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
                     <?php if ($edit_mode): ?>
                         <div>
@@ -460,168 +489,224 @@ if ($user_info) {
                             <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addPhoneModal">
                                 <i class="fas fa-plus me-1"></i>Add Phone
                             </button>
+                            <span class="badge bg-success save-badge" id="piSaved">Saved</span>
                         </div>
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
                     <?php if ($edit_mode): ?>
-                        <form method="POST" action="">
+                        <!-- No Save/Cancel buttons; auto-save on change -->
+                        <form id="profileForm" class="profile-form">
                             <input type="hidden" name="action" value="update_profile">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">First Name *</label>
-                                    <input type="text" class="form-control" name="first_name"
-                                           value="<?php echo htmlspecialchars($user_info['first_name'] ?? ''); ?>" required>
+                                    <input type="text" class="form-control" name="first_name" value="<?= htmlspecialchars($user_info['first_name'] ?? '') ?>" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Last Name *</label>
-                                    <input type="text" class="form-control" name="last_name"
-                                           value="<?php echo htmlspecialchars($user_info['last_name'] ?? ''); ?>" required>
+                                    <input type="text" class="form-control" name="last_name" value="<?= htmlspecialchars($user_info['last_name'] ?? '') ?>" required>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Gender</label>
                                     <select class="form-select" name="gender" required>
-                                        <option value="Male" <?php echo ($user_info['gender'] ?? '') === 'Male' ? 'selected' : ''; ?>>Male</option>
-                                        <option value="Female" <?php echo ($user_info['gender'] ?? '') === 'Female' ? 'selected' : ''; ?>>Female</option>
-                                        <option value="Other" <?php echo ($user_info['gender'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
+                                        <?php $g=$user_info['gender']??''; ?>
+                                        <option value="Male"   <?= $g==='Male'?'selected':''?>>Male</option>
+                                        <option value="Female" <?= $g==='Female'?'selected':''?>>Female</option>
+                                        <option value="Other"  <?= $g==='Other'?'selected':''?>>Other</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Date of Birth</label>
-                                    <input type="date" class="form-control" name="date_of_birth"
-                                           value="<?php echo htmlspecialchars($user_info['date_of_birth'] ?? ''); ?>" required>
+                                    <input type="date" class="form-control" name="date_of_birth" value="<?= htmlspecialchars($user_info['date_of_birth'] ?? '') ?>" required>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Street</label>
-                                    <input type="text" class="form-control" name="street"
-                                           value="<?php echo htmlspecialchars($user_info['street'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="street" value="<?= htmlspecialchars($user_info['street'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">City</label>
-                                    <input type="text" class="form-control" name="city"
-                                           value="<?php echo htmlspecialchars($user_info['city'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="city" value="<?= htmlspecialchars($user_info['city'] ?? '') ?>">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Zip Code</label>
-                                    <input type="text" class="form-control" name="zip"
-                                           value="<?php echo htmlspecialchars($user_info['zip'] ?? ''); ?>">
+                                    <input type="text" class="form-control" name="zip" value="<?= htmlspecialchars($user_info['zip'] ?? '') ?>">
                                 </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-6 mb-1">
                                     <label class="form-label">Department</label>
+                                    <?php $dept=$user_info['department']??''; ?>
                                     <select class="form-select" name="department" required>
                                         <option value="">Select Department</option>
-                                        <option value="Bachelor of Architecture" <?php echo ($user_info['department'] ?? '') === 'Bachelor of Architecture' ? 'selected' : ''; ?>>Bachelor of Architecture</option>
-                                        <option value="BS in Civil & Environmental Engineering (CEE)" <?php echo ($user_info['department'] ?? '') === 'BS in Civil & Environmental Engineering (CEE)' ? 'selected' : ''; ?>>BS in Civil & Environmental Engineering (CEE)</option>
-                                        <option value="BS in Computer Science & Engineering (CSE)" <?php echo ($user_info['department'] ?? '') === 'BS in Computer Science & Engineering (CSE)' ? 'selected' : ''; ?>>BS in Computer Science & Engineering (CSE)</option>
-                                        <option value="BS in Electrical & Electronic Engineering (EEE)" <?php echo ($user_info['department'] ?? '') === 'BS in Electrical & Electronic Engineering (EEE)' ? 'selected' : ''; ?>>BS in Electrical & Electronic Engineering (EEE)</option>
-                                        <option value="BS in Electronic & Telecom Engineering (ETE)" <?php echo ($user_info['department'] ?? '') === 'BS in Electronic & Telecom Engineering (ETE)' ? 'selected' : ''; ?>>BS in Electronic & Telecom Engineering (ETE)</option>
-                                        <option value="BS in Biochemistry and Biotechnology" <?php echo ($user_info['department'] ?? '') === 'BS in Biochemistry and Biotechnology' ? 'selected' : ''; ?>>BS in Biochemistry and Biotechnology</option>
-                                        <option value="BS in Environmental Science & Management" <?php echo ($user_info['department'] ?? '') === 'BS in Environmental Science & Management' ? 'selected' : ''; ?>>BS in Environmental Science & Management</option>
-                                        <option value="BS in Microbiology" <?php echo ($user_info['department'] ?? '') === 'BS in Microbiology' ? 'selected' : ''; ?>>BS in Microbiology</option>
-                                        <option value="BPharm Professional" <?php echo ($user_info['department'] ?? '') === 'BPharm Professional' ? 'selected' : ''; ?>>BPharm Professional</option>
-                                        <option value="BBA Major in Accounting" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Accounting' ? 'selected' : ''; ?>>BBA Major in Accounting</option>
-                                        <option value="BBA Major in Economics" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Economics' ? 'selected' : ''; ?>>BBA Major in Economics</option>
-                                        <option value="BBA Major in Entrepreneurship" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Entrepreneurship' ? 'selected' : ''; ?>>BBA Major in Entrepreneurship</option>
-                                        <option value="BBA Major in Finance" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Finance' ? 'selected' : ''; ?>>BBA Major in Finance</option>
-                                        <option value="BBA Major in Human Resource Management" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Human Resource Management' ? 'selected' : ''; ?>>BBA Major in Human Resource Management</option>
-                                        <option value="BBA Major in International Business" <?php echo ($user_info['department'] ?? '') === 'BBA Major in International Business' ? 'selected' : ''; ?>>BBA Major in International Business</option>
-                                        <option value="BBA Major in Management" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Management' ? 'selected' : ''; ?>>BBA Major in Management</option>
-                                        <option value="BBA Major in Management Information Systems" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Management Information Systems' ? 'selected' : ''; ?>>BBA Major in Management Information Systems</option>
-                                        <option value="BBA Major in Marketing" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Marketing' ? 'selected' : ''; ?>>BBA Major in Marketing</option>
-                                        <option value="BBA Major in Supply Chain Management" <?php echo ($user_info['department'] ?? '') === 'BBA Major in Supply Chain Management' ? 'selected' : ''; ?>>BBA Major in Supply Chain Management</option>
-                                        <option value="BBA General" <?php echo ($user_info['department'] ?? '') === 'BBA General' ? 'selected' : ''; ?>>BBA General</option>
-                                        <option value="BS in Economics" <?php echo ($user_info['department'] ?? '') === 'BS in Economics' ? 'selected' : ''; ?>>BS in Economics</option>
-                                        <option value="BA in English" <?php echo ($user_info['department'] ?? '') === 'BA in English' ? 'selected' : ''; ?>>BA in English</option>
-                                        <option value="Bachelor of Laws (LLB Hons)" <?php echo ($user_info['department'] ?? '') === 'Bachelor of Laws (LLB Hons)' ? 'selected' : ''; ?>>Bachelor of Laws (LLB Hons)</option>
-                                        <option value="BSS in Media and Journalism (MAJ)" <?php echo ($user_info['department'] ?? '') === 'BSS in Media and Journalism (MAJ)' ? 'selected' : ''; ?>>BSS in Media and Journalism (MAJ)</option>
+                                        <?php
+                                        $departments = [
+                                            'Bachelor of Architecture',
+                                            'BS in Civil & Environmental Engineering (CEE)',
+                                            'BS in Computer Science & Engineering (CSE)',
+                                            'BS in Electrical & Electronic Engineering (EEE)',
+                                            'BS in Electronic & Telecom Engineering (ETE)',
+                                            'BS in Biochemistry and Biotechnology',
+                                            'BS in Environmental Science & Management',
+                                            'BS in Microbiology',
+                                            'BPharm Professional',
+                                            'BBA Major in Accounting',
+                                            'BBA Major in Economics',
+                                            'BBA Major in Entrepreneurship',
+                                            'BBA Major in Finance',
+                                            'BBA Major in Human Resource Management',
+                                            'BBA Major in International Business',
+                                            'BBA Major in Management',
+                                            'BBA Major in Management Information Systems',
+                                            'BBA Major in Marketing',
+                                            'BBA Major in Supply Chain Management',
+                                            'BBA General',
+                                            'BS in Economics',
+                                            'BA in English',
+                                            'Bachelor of Laws (LLB Hons)',
+                                            'BSS in Media and Journalism (MAJ)'
+                                        ];
+                                        foreach ($departments as $d) {
+                                            $sel = ($dept === $d) ? 'selected' : '';
+                                            echo "<option value=\"".htmlspecialchars($d)."\" $sel>".htmlspecialchars($d)."</option>";
+                                        }
+                                        ?>
                                     </select>
                                 </div>
                             </div>
-                            <?php if ($user_type === 'Student'): ?>
-                                <div class="edit-section">
-                                    <h6>Shift Role to Alumni</h6>
-                                    <div class="mb-3">
-                                        <label class="form-label">Role</label>
-                                        <select class="form-select" name="shift_role">
-                                            <option value="">Stay as Student</option>
-                                            <option value="Alumni">Shift to Alumni</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3" style="display: none;">
-                                        <label class="form-label">Graduation Year</label>
-                                        <input type="text" class="form-control" name="grad_year" placeholder="e.g., 2023">
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                            <div class="text-end mt-3">
-                                <a href="profile.php?cancel_edit=1" class="btn btn-outline-secondary me-2">Cancel</a>
-                                <button type="submit" class="btn btn-primary">Save Changes</button>
-                            </div>
+                            <!-- No buttons here on purpose -->
                         </form>
                     <?php else: ?>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Student ID</label>
-                                <input type="text" class="form-control readonly-field"
-                                       value="<?php echo htmlspecialchars($user_info['student_id'] ?? 'N/A'); ?>" readonly>
+                                <input class="form-control readonly-field" value="<?= htmlspecialchars($user_info['student_id'] ?? 'N/A') ?>" readonly>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Gender</label>
-                                <input type="text" class="form-control readonly-field"
-                                       value="<?php echo htmlspecialchars($user_info['gender'] ?? 'N/A'); ?>" readonly>
+                                <input class="form-control readonly-field" value="<?= htmlspecialchars($user_info['gender'] ?? 'N/A') ?>" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Date of Birth</label>
-                                <input type="text" class="form-control readonly-field"
-                                       value="<?php echo htmlspecialchars($user_info['date_of_birth'] ?? 'N/A'); ?>" readonly>
+                                <input class="form-control readonly-field" value="<?= htmlspecialchars($user_info['date_of_birth'] ?? 'N/A') ?>" readonly>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Department</label>
-                                <input type="text" class="form-control readonly-field"
-                                       value="<?php echo htmlspecialchars($user_info['department'] ?? 'N/A'); ?>" readonly>
+                                <input class="form-control readonly-field" value="<?= htmlspecialchars($user_info['department'] ?? 'N/A') ?>" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Street</label>
-                                <input type="text" class="form-control readonly-field"
-                                       value="<?php echo htmlspecialchars($user_info['street'] ?? 'N/A'); ?>" readonly>
+                                <input class="form-control readonly-field" value="<?= htmlspecialchars($user_info['street'] ?? 'N/A') ?>" readonly>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">City</label>
-                                <input type="text" class="form-control readonly-field"
-                                       value="<?php echo htmlspecialchars($user_info['city'] ?? 'N/A'); ?>" readonly>
+                                <input class="form-control readonly-field" value="<?= htmlspecialchars($user_info['city'] ?? 'N/A') ?>" readonly>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Zip Code</label>
-                                <input type="text" class="form-control readonly-field"
-                                       value="<?php echo htmlspecialchars($user_info['zip'] ?? 'N/A'); ?>" readonly>
+                                <input class="form-control readonly-field" value="<?= htmlspecialchars($user_info['zip'] ?? 'N/A') ?>" readonly>
                             </div>
                         </div>
                         <h6>Contact Information</h6>
-                        <ul class="contact-list">
-                            <?php foreach ($emails as $email): ?>
-                                <li><i class="fas fa-envelope me-2"></i><?php echo htmlspecialchars($email); ?></li>
+                        <ul class="list-unstyled">
+                            <?php foreach ($emails as $em): ?>
+                                <li><i class="fas fa-envelope me-2"></i><?= htmlspecialchars($em) ?></li>
                             <?php endforeach; ?>
-                            <?php foreach ($phones as $phone): ?>
-                                <li><i class="fas fa-phone me-2"></i><?php echo htmlspecialchars($phone); ?></li>
+                            <?php foreach ($phones as $ph): ?>
+                                <li><i class="fas fa-phone me-2"></i><?= htmlspecialchars($ph) ?></li>
                             <?php endforeach; ?>
                         </ul>
                     <?php endif; ?>
                 </div>
             </div>
 
-            <!-- Education History -->
+            <!-- Skills -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-sliders me-2"></i>Skills</h5>
+                    <?php if ($edit_mode): ?>
+                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#skillModal" data-mode="add">
+                            <i class="fas fa-plus me-1"></i>Add Skill
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($skills)): ?>
+                        <p class="text-muted text-center py-3">No skills added yet.</p>
+                    <?php else: ?>
+                        <?php foreach ($skills as $s): ?>
+                            <div class="skill-row">
+                                <div class="skill-name"><?= htmlspecialchars($s['name']) ?></div>
+                                <div class="flex-grow-1">
+                                    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= (int)$s['level'] ?>">
+                                        <div class="progress-bar" style="width: <?= (int)$s['level'] ?>%;">
+                                            <?= (int)$s['level'] ?>%
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php if ($edit_mode): ?>
+                                    <button class="btn btn-sm btn-outline-primary ms-2"
+                                            data-bs-toggle="modal" data-bs-target="#skillModal"
+                                            data-mode="edit"
+                                            data-name="<?= htmlspecialchars($s['name']) ?>"
+                                            data-level="<?= (int)$s['level'] ?>">
+                                        Edit
+                                    </button>
+                                    <form method="post" class="ms-2 d-inline-block skill-del-form" onsubmit="return confirm('Remove this skill?');">
+                                        <input type="hidden" name="action" value="delete_skill">
+                                        <input type="hidden" name="skill_name" value="<?= htmlspecialchars($s['name']) ?>">
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Interests -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-heart me-2"></i>Interests</h5>
+                    <?php if ($edit_mode): ?>
+                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#interestModal">
+                            <i class="fas fa-plus me-1"></i>Add Interest
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($user_interests)): ?>
+                        <p class="text-muted text-center py-3">No interests added yet.</p>
+                    <?php else: ?>
+                        <?php foreach ($user_interests as $it): ?>
+                            <span class="tag">
+                                <i class="fas fa-star-of-life"></i><?= htmlspecialchars($it['interest_name']) ?>
+                                <?php if ($edit_mode): ?>
+                                    <form method="post" class="d-inline remove-interest-form">
+                                        <input type="hidden" name="action" value="remove_interest">
+                                        <input type="hidden" name="interest_id" value="<?= (int)$it['interest_id'] ?>">
+                                        <button type="submit" class="btn btn-sm btn-link p-0 x" title="Remove">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                            </span>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Education -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Education History</h5>
@@ -637,11 +722,11 @@ if ($user_info) {
                     <?php else: ?>
                         <?php foreach ($education_history as $edu): ?>
                             <div class="border-start border-primary border-3 ps-3 mb-3">
-                                <h6 class="mb-1"><?php echo htmlspecialchars($edu['degree']); ?></h6>
-                                <p class="text-primary mb-1"><?php echo htmlspecialchars($edu['institution']); ?></p>
+                                <h6 class="mb-1"><?= htmlspecialchars($edu['degree']) ?></h6>
+                                <p class="text-primary mb-1"><?= htmlspecialchars($edu['institution']) ?></p>
                                 <small class="text-muted">
-                                    <?php echo date('M Y', strtotime($edu['start_date'])); ?> -
-                                    <?php echo $edu['end_date'] ? date('M Y', strtotime($edu['end_date'])) : 'Present'; ?>
+                                    <?= date('M Y', strtotime($edu['start_date'])) ?> -
+                                    <?= $edu['end_date'] ? date('M Y', strtotime($edu['end_date'])) : 'Present' ?>
                                 </small>
                             </div>
                         <?php endforeach; ?>
@@ -649,7 +734,7 @@ if ($user_info) {
                 </div>
             </div>
 
-            <!-- Employment History -->
+            <!-- Employment -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Employment History</h5>
@@ -665,14 +750,14 @@ if ($user_info) {
                     <?php else: ?>
                         <?php foreach ($employment_history as $emp): ?>
                             <div class="border-start border-success border-3 ps-3 mb-3">
-                                <h6 class="mb-1"><?php echo htmlspecialchars($emp['job_title']); ?></h6>
-                                <p class="text-success mb-1"><?php echo htmlspecialchars($emp['company']); ?></p>
+                                <h6 class="mb-1"><?= htmlspecialchars($emp['job_title']) ?></h6>
+                                <p class="text-success mb-1"><?= htmlspecialchars($emp['company']) ?></p>
                                 <?php if ($emp['designation']): ?>
-                                    <p class="mb-1 small"><?php echo htmlspecialchars($emp['designation']); ?></p>
+                                    <p class="mb-1 small"><?= htmlspecialchars($emp['designation']) ?></p>
                                 <?php endif; ?>
                                 <small class="text-muted">
-                                    <?php echo date('M Y', strtotime($emp['start_date'])); ?> -
-                                    <?php echo $emp['end_date'] ? date('M Y', strtotime($emp['end_date'])) : 'Present'; ?>
+                                    <?= date('M Y', strtotime($emp['start_date'])) ?> -
+                                    <?= $emp['end_date'] ? date('M Y', strtotime($emp['end_date'])) : 'Present' ?>
                                 </small>
                             </div>
                         <?php endforeach; ?>
@@ -694,71 +779,43 @@ if ($user_info) {
                     <?php if (empty($achievements)): ?>
                         <p class="text-muted text-center py-3">No achievements added yet.</p>
                     <?php else: ?>
-                        <?php foreach ($achievements as $achievement): ?>
+                        <?php foreach ($achievements as $a): ?>
                             <div class="border-start border-warning border-3 ps-3 mb-3">
-                                <h6 class="mb-1"><?php echo htmlspecialchars($achievement['ach_title']); ?></h6>
-                                <?php if ($achievement['organization']): ?>
-                                    <p class="text-warning mb-1"><?php echo htmlspecialchars($achievement['organization']); ?></p>
+                                <h6 class="mb-1"><?= htmlspecialchars($a['ach_title']) ?></h6>
+                                <?php if ($a['organization']): ?>
+                                    <p class="text-warning mb-1"><?= htmlspecialchars($a['organization']) ?></p>
                                 <?php endif; ?>
-                                <?php if ($achievement['description']): ?>
-                                    <p class="mb-1 small"><?php echo htmlspecialchars($achievement['description']); ?></p>
+                                <?php if ($a['description']): ?>
+                                    <p class="mb-1 small"><?= htmlspecialchars($a['description']) ?></p>
                                 <?php endif; ?>
-                                <small class="text-muted">
-                                    <?php echo date('F j, Y', strtotime($achievement['ach_date'])); ?>
-                                    <?php if ($achievement['type']): ?>
-                                        | <?php echo htmlspecialchars($achievement['type']); ?>
-                                    <?php endif; ?>
-                                </small>
+                                <small class="text-muted"><?= date('F j, Y', strtotime($a['ach_date'])) ?><?= $a['type'] ? ' | '.htmlspecialchars($a['type']) : '' ?></small>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
+
         </div>
 
-        <!-- Quick Stats Sidebar -->
+        <!-- Right -->
         <div class="col-lg-4">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Profile Stats</h5>
-                </div>
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Profile Stats</h5></div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Education Records:</span>
-                        <span class="badge bg-primary"><?php echo count($education_history); ?></span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Work Experience:</span>
-                        <span class="badge bg-success"><?php echo count($employment_history); ?></span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Achievements:</span>
-                        <span class="badge bg-warning"><?php echo count($achievements); ?></span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Emails:</span>
-                        <span class="badge bg-info"><?php echo count($emails); ?></span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Phone Numbers:</span>
-                        <span class="badge bg-info"><?php echo count($phones); ?></span>
-                    </div>
+                    <div class="d-flex justify-content-between mb-2"><span>Education Records:</span><span class="badge bg-primary"><?= count($education_history) ?></span></div>
+                    <div class="d-flex justify-content-between mb-2"><span>Employment History:</span><span class="badge bg-success"><?= count($employment_history) ?></span></div>
+                    <div class="d-flex justify-content-between mb-2"><span>Achievements:</span><span class="badge bg-warning"><?= count($achievements) ?></span></div>
+                    <div class="d-flex justify-content-between mb-2"><span>Skills:</span><span class="badge bg-info"><?= count($skills) ?></span></div>
+                    <div class="d-flex justify-content-between mb-2"><span>Interests:</span><span class="badge bg-info"><?= count($user_interests) ?></span></div>
                     <hr>
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Complete your profile to connect with more alumni and students.
-                    </small>
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Complete your profile to connect with more alumni and students.</small>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Security</h5>
-                </div>
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-lock me-2"></i>Security</h5></div>
                 <div class="card-body">
-                    <p class="small text-muted mb-3">
-                        Your email, phone, and Student ID are protected and cannot be changed for security reasons.
-                    </p>
+                    <p class="small text-muted mb-3">Your email, phone, and Student ID are protected and cannot be changed for security reasons.</p>
                     <a href="change_password.php" class="btn btn-outline-primary btn-sm w-100 action-link">
                         <i class="fas fa-key me-2"></i>Change Password
                     </a>
@@ -768,288 +825,401 @@ if ($user_info) {
     </div>
 </div>
 
-<!-- Password Verification Modal -->
+<!-- Verify Modal -->
 <div class="modal fade" id="verifyModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-shield-alt me-2"></i>Verify Your Identity</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="">
-                <div class="modal-body">
-                    <p class="text-muted">Please enter your current password to enable edit mode:</p>
-                    <input type="hidden" name="action" value="enable_edit">
-                    <div class="mb-3">
-                        <label for="verify_password" class="form-label">Current Password</label>
-                        <input type="password" class="form-control" id="verify_password" name="verify_password" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Verify & Edit</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <form class="modal-content" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-shield-alt me-2"></i>Verify Your Identity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Enter your password to enable edit mode.</p>
+        <input type="hidden" name="action" value="enable_edit">
+        <div class="mb-3">
+            <label class="form-label">Current Password</label>
+            <input type="password" class="form-control" name="verify_password" required>
         </div>
-    </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Verify & Edit</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Add Email Modal -->
 <div class="modal fade" id="addEmailModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-envelope me-2"></i>Add Secondary Email</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="add_email">
-                    <div class="mb-3">
-                        <label for="new_email" class="form-label">Email Address *</label>
-                        <input type="email" class="form-control" id="new_email" name="new_email" required
-                               placeholder="e.g., example@domain.com">
-                        <small class="text-muted">Enter a valid email address</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Email</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <form class="modal-content" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-envelope me-2"></i>Add Secondary Email</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="add_email">
+        <div class="mb-3">
+            <label class="form-label">Email Address *</label>
+            <input type="email" class="form-control" name="new_email" required placeholder="e.g., example@domain.com">
         </div>
-    </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Add Email</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Add Phone Modal -->
 <div class="modal fade" id="addPhoneModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-phone me-2"></i>Add Secondary Phone</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="add_phone">
-                    <div class="mb-3">
-                        <label for="new_phone" class="form-label">Phone Number *</label>
-                        <input type="text" class="form-control" id="new_phone" name="new_phone" required
-                               placeholder="e.g., +1234567890">
-                        <small class="text-muted">Use 10-15 digits, may include +, -, or spaces</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Phone</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <form class="modal-content" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-phone me-2"></i>Add Secondary Phone</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="add_phone">
+        <div class="mb-3">
+            <label class="form-label">Phone Number *</label>
+            <input type="text" class="form-control" name="new_phone" required placeholder="e.g., +1234567890">
+            <small class="text-muted">Use 10-15 digits, may include +, -, or spaces</small>
         </div>
-    </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Add Phone</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Skill Modal -->
+<div class="modal fade" id="skillModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="post" id="skillForm">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-sliders me-2"></i><span id="skillMode">Add</span> Skill</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="add_skill">
+        <input type="hidden" name="old_name" value="">
+        <div class="mb-3">
+            <label class="form-label">Skill Name *</label>
+            <input type="text" class="form-control" name="skill_name" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Proficiency: <span id="lvlVal">70</span>%</label>
+            <input type="range" class="form-range" name="skill_level" min="0" max="100" value="70" oninput="document.getElementById('lvlVal').textContent=this.value">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Save Skill</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Add Education Modal -->
 <div class="modal fade" id="addEducationModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-graduation-cap me-2"></i>Add Education</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="add_education">
-                    <div class="mb-3">
-                        <label for="degree" class="form-label">Degree *</label>
-                        <input type="text" class="form-control" id="degree" name="degree" required
-                               placeholder="e.g., Bachelor of Science in Computer Science">
-                    </div>
-                    <div class="mb-3">
-                        <label for="institution" class="form-label">Institution *</label>
-                        <input type="text" class="form-control" id="institution" name="institution" required
-                               placeholder="e.g., ABC University">
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="edu_start_date" class="form-label">Start Date *</label>
-                            <input type="date" class="form-control" id="edu_start_date" name="edu_start_date" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="edu_end_date" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="edu_end_date" name="edu_end_date">
-                            <small class="text-muted">Leave blank if currently studying</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Education</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <form class="modal-content" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-graduation-cap me-2"></i>Add Education</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="add_education">
+        <div class="mb-3">
+            <label class="form-label">Degree *</label>
+            <input type="text" class="form-control" name="degree" required>
         </div>
-    </div>
+        <div class="mb-3">
+            <label class="form-label">Institution *</label>
+            <input type="text" class="form-control" name="institution" required>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Start Date *</label>
+                <input type="date" class="form-control" name="edu_start_date" id="edu_start_date">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">End Date</label>
+                <input type="date" class="form-control" name="edu_end_date" id="edu_end_date">
+                <small class="text-muted">Leave blank if currently studying</small>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Add Education</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Add Employment Modal -->
 <div class="modal fade" id="addEmploymentModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-briefcase me-2"></i>Add Employment</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="add_employment">
-                    <div class="mb-3">
-                        <label for="job_title" class="form-label">Job Title *</label>
-                        <input type="text" class="form-control" id="job_title" name="job_title" required
-                               placeholder="e.g., Software Engineer">
-                    </div>
-                    <div class="mb-3">
-                        <label for="company" class="form-label">Company *</label>
-                        <input type="text" class="form-control" id="company" name="company" required
-                               placeholder="e.g., TechCorp Ltd.">
-                    </div>
-                    <div class="mb-3">
-                        <label for="designation" class="form-label">Designation</label>
-                        <input type="text" class="form-control" id="designation" name="designation"
-                               placeholder="e.g., Senior Developer">
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="emp_start_date" class="form-label">Start Date *</label>
-                            <input type="date" class="form-control" id="emp_start_date" name="emp_start_date" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="emp_end_date" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="emp_end_date" name="emp_end_date">
-                            <small class="text-muted">Leave blank if currently working</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Employment</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <form class="modal-content" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-briefcase me-2"></i>Add Employment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="add_employment">
+        <div class="mb-3">
+            <label class="form-label">Job Title *</label>
+            <input type="text" class="form-control" name="job_title" required>
         </div>
-    </div>
+        <div class="mb-3">
+            <label class="form-label">Company *</label>
+            <input type="text" class="form-control" name="company" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Designation</label>
+            <input type="text" class="form-control" name="designation">
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Start Date *</label>
+                <input type="date" class="form-control" name="emp_start_date" id="emp_start_date">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">End Date</label>
+                <input type="date" class="form-control" name="emp_end_date" id="emp_end_date">
+                <small class="text-muted">Leave blank if currently working</small>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Add Employment</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Add Achievement Modal -->
 <div class="modal fade" id="addAchievementModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-trophy me-2"></i>Add Achievement</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="add_achievement">
-                    <div class="mb-3">
-                        <label for="ach_title" class="form-label">Achievement Title *</label>
-                        <input type="text" class="form-control" id="ach_title" name="ach_title" required
-                               placeholder="e.g., Best Student Award">
-                    </div>
-                    <div class="mb-3">
-                        <label for="ach_date" class="form-label">Achievement Date *</label>
-                        <input type="date" class="form-control" id="ach_date" name="ach_date" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="organization" class="form-label">Organization</label>
-                        <input type="text" class="form-control" id="organization" name="organization"
-                               placeholder="e.g., ABC University">
-                    </div>
-                    <div class="mb-3">
-                        <label for="ach_type" class="form-label">Type</label>
-                        <select class="form-select" id="ach_type" name="type">
-                            <option value="">Select Type</option>
-                            <option value="Academic">Academic</option>
-                            <option value="Professional">Professional</option>
-                            <option value="Research">Research</option>
-                            <option value="Sports">Sports</option>
-                            <option value="Cultural">Cultural</option>
-                            <option value="Community Service">Community Service</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="3"
-                                  placeholder="Brief description of the achievement..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Achievement</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <form class="modal-content" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-trophy me-2"></i>Add Achievement</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="add_achievement">
+        <div class="mb-3">
+            <label class="form-label">Achievement Title *</label>
+            <input type="text" class="form-control" name="ach_title" required>
         </div>
-    </div>
+        <div class="mb-3">
+            <label class="form-label">Achievement Date *</label>
+            <input type="date" class="form-control" name="ach_date" id="ach_date">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Organization</label>
+            <input type="text" class="form-control" name="organization">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select class="form-select" name="type">
+                <option value="">Select Type</option>
+                <option value="Academic">Academic</option>
+                <option value="Professional">Professional</option>
+                <option value="Research">Research</option>
+                <option value="Sports">Sports</option>
+                <option value="Cultural">Cultural</option>
+                <option value="Community Service">Community Service</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Add Achievement</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Interest Modal -->
+<div class="modal fade" id="interestModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" method="post">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-heart me-2"></i>Add Interest</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="action" value="add_interest">
+        <div class="mb-3">
+            <label class="form-label">Choose Existing</label>
+            <select class="form-select" name="interest_id">
+                <option value="">-- Select --</option>
+                <?php foreach ($all_interests as $i): ?>
+                    <option value="<?= (int)$i['interest_id'] ?>"><?= htmlspecialchars($i['interest_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="text-center my-2">or</div>
+        <div class="mb-3">
+            <label class="form-label">Create New</label>
+            <input type="text" class="form-control" name="interest_name" placeholder="e.g., AI & ML">
+            <small class="text-muted">New interest will be added to the global list.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Add Interest</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <?php include '../includes/footer.php'; ?>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Auto-hide alerts after 5 seconds
-    setTimeout(function() {
-        var alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            var bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        });
-    }, 5000);
+/* ------- Dashboard → Profile: one-time modal + nice Back behavior ------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const shouldPrompt = <?= ($show_verify_modal ? 'true' : 'false') ?>;
+  const editMode     = <?= ($edit_mode ? 'true' : 'false') ?>;
 
-    // Form validation
-    document.addEventListener('DOMContentLoaded', function() {
-        // Prevent end date from being before start date
-        const eduStartDate = document.getElementById('edu_start_date');
-        const eduEndDate = document.getElementById('edu_end_date');
-        const empStartDate = document.getElementById('emp_start_date');
-        const empEndDate = document.getElementById('emp_end_date');
+  // If we arrived with ?prompt_edit=1, make it one-time by stripping the query and push a dummy state
+  <?php if ($auto_prompt_edit): ?>
+    history.replaceState({stage:'profile'}, '', 'profile.php');
+    history.pushState({stage:'profile-edit'}, '', '#edit');
+  <?php endif; ?>
 
-        if (eduStartDate && eduEndDate) {
-            eduStartDate.addEventListener('change', function() {
-                eduEndDate.min = this.value;
-            });
+  if (shouldPrompt) {
+    const el = document.getElementById('verifyModal');
+    if (el) {
+      const modal = new bootstrap.Modal(el);
+      modal.show();
+      setTimeout(() => {
+        const input = el.querySelector('input[name="verify_password"]');
+        if (input) input.focus({preventScroll:true});
+      }, 150);
+    }
+  }
+
+  // If user is in edit mode and presses Back, stay on profile but exit edit server-side
+  window.addEventListener('popstate', () => {
+    if (editMode) {
+      location.replace('profile.php?cancel_edit=1#view');
+    }
+  });
+});
+
+/* ------- Auto-save Personal Info (no buttons) ------- */
+(function(){
+  const form = document.getElementById('profileForm');
+  if (!form) return;
+  let timer = null;
+  const savedBadge = document.getElementById('piSaved');
+
+  const send = () => {
+    const fd = new FormData(form);
+    fetch('profile.php', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body: fd })
+      .then(r => r.json()).then(j => {
+        if (savedBadge) {
+          savedBadge.textContent = j.ok ? 'Saved' : 'Error';
+          savedBadge.classList.toggle('bg-success', !!j.ok);
+          savedBadge.classList.toggle('bg-danger', !j.ok);
+          savedBadge.style.display = 'inline-block';
+          setTimeout(()=>{ savedBadge.style.display='none'; }, 1500);
         }
+      }).catch(()=>{ /* ignore */ });
+  };
 
-        if (empStartDate && empEndDate) {
-            empStartDate.addEventListener('change', function() {
-                empEndDate.min = this.value;
-            });
-        }
-
-        // Achievement date shouldn't be in the future
-        const achDate = document.getElementById('ach_date');
-        if (achDate) {
-            const today = new Date().toISOString().split('T')[0];
-            achDate.max = today;
-        }
+  form.querySelectorAll('input,select,textarea').forEach(el=>{
+    el.addEventListener('change', () => {
+      clearTimeout(timer); timer = setTimeout(send, 250);
     });
-
-    // Toggle graduation year input based on role selection
-    document.addEventListener('DOMContentLoaded', function () {
-        const roleSelect = document.querySelector('select[name="shift_role"]');
-        const gradYearInput = document.querySelector('input[name="grad_year"]');
-
-        function toggleGradYear() {
-            if (roleSelect.value === 'Alumni') {
-                gradYearInput.closest('.mb-3').style.display = 'block';
-            } else {
-                gradYearInput.closest('.mb-3').style.display = 'none';
-                gradYearInput.value = '';
-            }
-        }
-
-        if (roleSelect && gradYearInput) {
-            toggleGradYear(); // On load
-            roleSelect.addEventListener('change', toggleGradYear);
-        }
+    el.addEventListener('input', () => {
+      clearTimeout(timer); timer = setTimeout(send, 600);
     });
+  });
+})();
+
+/* ------- Skill modal: add vs edit ------- */
+const skillModal = document.getElementById('skillModal');
+if (skillModal) {
+  skillModal.addEventListener('show.bs.modal', (ev) => {
+    const btn = ev.relatedTarget;
+    const mode = btn?.getAttribute('data-mode') || 'add';
+    const form = document.getElementById('skillForm');
+    const modeSpan = document.getElementById('skillMode');
+    const lvlVal = document.getElementById('lvlVal');
+
+    form.reset();
+    form.action.value = (mode === 'edit') ? 'update_skill' : 'add_skill';
+    modeSpan.textContent = (mode === 'edit') ? 'Edit' : 'Add';
+    let name = btn?.getAttribute('data-name') || '';
+    let level = btn?.getAttribute('data-level') || '70';
+    form.old_name.value = name;
+    form.skill_name.value = name;
+    form.skill_level.value = level;
+    if (lvlVal) lvlVal.textContent = level;
+  });
+
+  // AJAX submit skill form
+  document.getElementById('skillForm')?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('profile.php', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body: fd })
+      .then(r => r.json()).then(j => location.reload());
+  });
+
+  // AJAX delete skill
+  document.querySelectorAll('.skill-del-form').forEach(f=>{
+    f.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const fd = new FormData(f);
+      fetch('profile.php', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body: fd })
+        .then(r=>r.json()).then(()=>location.reload());
+    });
+  });
+}
+
+/* ------- Interest add/remove AJAX ------- */
+document.querySelectorAll('.remove-interest-form').forEach(f=>{
+  f.addEventListener('submit',(e)=>{
+    e.preventDefault();
+    const fd = new FormData(f);
+    fetch('profile.php', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body: fd })
+      .then(r=>r.json()).then(()=>location.reload());
+  });
+});
+document.getElementById('interestModal')?.querySelector('form')?.addEventListener('submit', function(e){
+  // allow normal post without JS too; but prefer ajax
+  e.preventDefault();
+  const fd = new FormData(this);
+  fetch('profile.php', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body: fd })
+    .then(r=>r.json()).then(()=>location.reload());
+});
+
+/* ------- Minor validations ------- */
+document.addEventListener('DOMContentLoaded', function() {
+  const es = document.getElementById('edu_start_date');
+  const ee = document.getElementById('edu_end_date');
+  const ss = document.getElementById('emp_start_date');
+  const se = document.getElementById('emp_end_date');
+  if (es && ee) es.addEventListener('change',()=> ee.min = es.value);
+  if (ss && se) ss.addEventListener('change',()=> se.min = ss.value);
+  const ach = document.getElementById('ach_date');
+  if (ach) ach.max = new Date().toISOString().split('T')[0];
+});
+
 </script>
 </body>
 </html>
