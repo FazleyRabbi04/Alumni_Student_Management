@@ -160,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    /* 5) education/employment/achievement (unchanged) */
+    /* 5) education/employment/achievement (unchanged)] */
     if ($action === 'add_education') {
         $degree = trim($_POST['degree'] ?? '');
         $institution = trim($_POST['institution'] ?? '');
