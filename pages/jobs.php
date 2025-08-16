@@ -1,4 +1,11 @@
 <?php
+/**
+ * Job Board
+ * - Both Students & Alumni can view and apply to jobs
+ * - Only Alumni can post/edit/delete jobs and manage applications
+ * - Cleaned UI + black tab text + necessary comments only
+ */
+
 require_once '../config/database.php';
 requireLogin();
 
@@ -11,7 +18,7 @@ if (!$user_id) {
 $message = '';
 $error   = '';
 
-/* --------- role detection --------- */
+/* --------- Detect role flags (by presence in tables) --------- */
 $is_student = false;
 $is_alumni  = false;
 
@@ -37,9 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_job'])) {
             $sql = "INSERT INTO job (job_title, company, location, description, person_id)
                     VALUES (?, ?, ?, ?, ?)";
             if (executeQuery($sql, [$job_title, $company, $location, $description, $user_id])) {
-                $job_id = getLastInsertId();
-                // optional: mirror in posts (if you keep that table)
-                @executeQuery("INSERT IGNORE INTO posts (person_id, job_id) VALUES (?, ?)", [$user_id, $job_id]);
+                // If you have a helper for last insert ID, use it; otherwise remove the next 2 lines.
+                if (function_exists('getLastInsertId')) {
+                    $job_id = getLastInsertId();
+                    @executeQuery("INSERT IGNORE INTO posts (person_id, job_id) VALUES (?, ?)", [$user_id, $job_id]);
+                }
                 $message = "Job posted successfully!";
             } else {
                 $error = "Failed to post job.";
@@ -50,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_job'])) {
     }
 }
 
-/* Edit job (owner only, alumni naturally) */
+/* Edit job (owner only) */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_job'])) {
     $job_id      = (int)($_POST['job_id'] ?? 0);
     $job_title   = trim($_POST['job_title'] ?? '');
@@ -162,7 +171,7 @@ $stats_stmt = executeQuery("
 ");
 $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : ['total_jobs'=>0,'weekly_jobs'=>0,'monthly_jobs'=>0];
 
-/* All jobs + poster info + applicant count */
+/* All jobs (+ poster info + applicant count) */
 $jobs_stmt = executeQuery("
     SELECT 
       j.*, p.first_name, p.last_name, p.department,
@@ -173,7 +182,7 @@ $jobs_stmt = executeQuery("
 ");
 $jobs = $jobs_stmt ? $jobs_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-/* My applications map: job_id => status (for button state in All Jobs) */
+/* My applications map: job_id => status (for buttons on All Jobs) */
 $app_map = [];
 $my_apps_stmt = executeQuery("SELECT job_id, status FROM applies WHERE person_id=?", [$user_id]);
 if ($my_apps_stmt) {
@@ -238,22 +247,32 @@ if ($is_student) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Job Board</title>
+
+<!-- Required CSS (necessary includes only) -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
 <style>
+  /* ---------- Base look & feel ---------- */
   body{font-family:'Open Sans',sans-serif;background:#F9FAFB;color:#1F2937}
   .h2{font-size:1.75rem;font-weight:700;color:#1E3A8A}
   .dashboard-card{border:none;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,.1)}
   .dashboard-card .card-body{background:linear-gradient(135deg,#1E3A8A,#2563EB);color:#fff;border-radius:12px;padding:20px;text-align:center}
-  .nav-tabs{border-bottom:1.5px solid #e5e7eb!important}
-  .nav-tabs .nav-link{color:#1F2937!important;background:#fff!important;font-weight:600;border:none;border-bottom:2px solid transparent}
-  .nav-tabs .nav-link.active{color:#1E3A8A!important;border-bottom:3px solid #1E3A8A!important;font-weight:700}
   .job-card .card{border:1px solid #E5E7EB;border-radius:12px;transition:box-shadow .2s}
   .job-card .card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
   .job-empty-state{max-width:460px;margin:36px auto;background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 2px 18px rgba(0,0,0,.04);padding:48px 30px}
-  #my-jobs .table .collapse>td{background:#fff}
   .badge.round{border-radius:10px;padding:.35rem .6rem}
+
+  /* ---------- Tabs: force black text ---------- */
+  .nav-tabs{border-bottom:1.5px solid #e5e7eb !important}
+  .nav-tabs .nav-link{color:#000 !important;background:#fff !important;font-weight:600;border:none;border-bottom:2px solid transparent}
+  .nav-tabs .nav-link:hover,
+  .nav-tabs .nav-link:focus{color:#000 !important}
+  .nav-tabs .nav-link.active{color:#000 !important;font-weight:700;border-bottom:3px solid #1E3A8A !important;background-color:#f8f9fa !important}
+
+  /* ---------- My jobs table tweaks ---------- */
+  #my-jobs .table .collapse>td{background:#fff}
 </style>
 </head>
 <body>
@@ -404,7 +423,7 @@ if ($is_student) {
                       <?php endif; ?>
 
                       <div class="d-flex justify-content-between align-items-center">
-                        <!-- details modal trigger -->
+                        <!-- Details modal trigger -->
                         <button type="button" class="btn btn-primary btn-sm"
                                 data-bs-toggle="modal" data-bs-target="#jobDetailModal"
                                 data-job='<?= json_encode($job, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) ?>'>
@@ -739,8 +758,10 @@ if ($is_student) {
 
 <?php include '../includes/footer.php'; ?>
 
+<!-- Necessary JS includes only -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+/* -------- Client-side filters & modal fills (minimal, necessary) -------- */
 document.addEventListener('DOMContentLoaded', function() {
   const searchInput = document.getElementById('jobSearch');
   const locationFilter = document.getElementById('locationFilter');
