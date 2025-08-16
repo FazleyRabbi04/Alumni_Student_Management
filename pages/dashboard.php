@@ -5,6 +5,10 @@ requireLogin();
 $user_info = getUserInfo($_SESSION['user_id']);
 $user_id   = $_SESSION['user_id'];
 
+// ---- Role flags (derived from profile fields you already store) ----
+$is_student = !empty($user_info['batch_year']) && empty($user_info['grad_year']);
+$is_alumni  = !empty($user_info['grad_year']);
+
 // ---------------- Dashboard stats ----------------
 $stats = [];
 
@@ -31,7 +35,6 @@ $comm_stmt = executeQuery(
                        AND s_other.person_id <> s_you.person_id",
     [$user_id]
 );
-
 $stats['unread_messages'] = $comm_stmt ? (int)($comm_stmt->fetch()['total'] ?? 0) : 0;
 
 // User's registered mentorship sessions (upcoming)
@@ -153,39 +156,23 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
 
         /* Modal skins */
         .modal-content { border: none; border-radius: 14px; overflow: hidden; }
-        /* Primary (Upcoming Events) */
-        .modal-skin-primary .modal-header {
-          background: linear-gradient(to right, #1861bf, #6bbcf6);
-          color: #fff;
-        }
+        .modal-skin-primary .modal-header { background: linear-gradient(to right, #1861bf, #6bbcf6); color: #fff; }
         .modal-skin-primary .btn-close { filter: invert(1) brightness(200%); }
         .modal-skin-primary .modal-body { background: #eef6ff; }
-        /* Success (My Events) */
-        .modal-skin-success .modal-header {
-          background: linear-gradient(to right, #28a745, #71dd8a);
-          color: #fff;
-        }
+
+        .modal-skin-success .modal-header { background: linear-gradient(to right, #28a745, #71dd8a); color: #fff; }
         .modal-skin-success .btn-close { filter: invert(1) brightness(200%); }
         .modal-skin-success .modal-body { background: #ecfdf3; }
-        /* Warning (Recent Jobs) */
-        .modal-skin-warning .modal-header {
-          background: linear-gradient(to right, #ffc107, #ffda6a);
-          color: #333;
-        }
+
+        .modal-skin-warning .modal-header { background: linear-gradient(to right, #ffc107, #ffda6a); color: #333; }
         .modal-skin-warning .btn-close { filter: none; }
         .modal-skin-warning .modal-body { background: #fff9db; }
-        /* Info (Unread Messages) */
-        .modal-skin-info .modal-header {
-          background: linear-gradient(to right, #17a2b8, #5bc0de);
-          color: #fff;
-        }
+
+        .modal-skin-info .modal-header { background: linear-gradient(to right, #17a2b8, #5bc0de); color: #fff; }
         .modal-skin-info .btn-close { filter: invert(1) brightness(200%); }
         .modal-skin-info .modal-body { background: #e7f8fd; }
-        /* Purple (Mentorship Sessions) */
-        .modal-skin-purple .modal-header {
-          background: linear-gradient(to right, #6f42c1, #d3adf7);
-          color: #fff;
-        }
+
+        .modal-skin-purple .modal-header { background: linear-gradient(to right, #6f42c1, #d3adf7); color: #fff; }
         .modal-skin-purple .btn-close { filter: invert(1) brightness(200%); }
         .modal-skin-purple .modal-body { background: #f3e8ff; }
     </style>
@@ -300,51 +287,94 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
                 </div>
             </div>
 
-            <!-- Quick Actions -->
+            <!-- Quick Actions (role-aware, and renamed labels) -->
             <div class="row mb-4 justify-content-center">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header text-center"><i class="fas fa-bolt me-2"></i>Quick Actions</div>
-                        <div class="card-body text-center">
-                            <div class="row text-center justify-content-center g-3">
-                                <div class="col-md-3 mb-3">
-                                    <a href="profile.php?prompt_edit=1" class="btn quick-action-btn quick-action-blue btn-lg w-100">
-                                          <i class="fas fa-user-edit fa-2x d-block mb-2"></i>
-                                                    Update Profile
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="events.php" class="btn quick-action-btn quick-action-green btn-lg w-100">
-                                        <i class="fas fa-calendar-plus fa-2x d-block mb-2"></i>Register Event
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="jobs.php" class="btn quick-action-btn quick-action-yellow btn-lg w-100">
-                                        <i class="fas fa-briefcase fa-2x d-block mb-2"></i>Post Job
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="communications.php" class="btn quick-action-btn quick-action-teal btn-lg w-100">
-                                        <i class="fas fa-envelope fa-2x d-block mb-2"></i>Messages
-                                    </a>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <a href="mentorship.php" class="btn quick-action-btn quick-action-purple btn-lg w-100">
-                                        <i class="fas fa-chalkboard-teacher fa-2x d-block mb-2"></i>Register Mentorship
-                                    </a>
-                                </div>
-                            </div>
+              <div class="col-12">
+                <div class="card">
+                  <div class="card-header text-center"><i class="fas fa-bolt me-2"></i>Quick Actions</div>
+                  <div class="card-body text-center">
+                    <div class="row text-center justify-content-center g-3">
+
+                      <?php if ($is_student): ?>
+                        <!-- STUDENT: Update Profile, Event, Jobs, Mentorship -->
+                        <div class="col-md-3 mb-3">
+                          <a href="profile.php?prompt_edit=1" class="btn quick-action-btn quick-action-blue btn-lg w-100">
+                            <i class="fas fa-user-edit fa-2x d-block mb-2"></i>
+                            Update Profile
+                          </a>
                         </div>
+
+                        <div class="col-md-3 mb-3">
+                          <a href="events.php" class="btn quick-action-btn quick-action-green btn-lg w-100">
+                            <i class="fas fa-calendar-plus fa-2x d-block mb-2"></i>
+                            Event
+                          </a>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                          <a href="jobs.php" class="btn quick-action-btn quick-action-yellow btn-lg w-100">
+                            <i class="fas fa-briefcase fa-2x d-block mb-2"></i>
+                            Jobs
+                          </a>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                          <a href="mentorship.php" class="btn quick-action-btn quick-action-purple btn-lg w-100">
+                            <i class="fas fa-chalkboard-teacher fa-2x d-block mb-2"></i>
+                            Mentorship
+                          </a>
+                        </div>
+
+                      <?php else: ?>
+                        <!-- ALUMNI: Update Profile, Event, Post Job, Messages, Mentorship -->
+                        <div class="col-md-3 mb-3">
+                          <a href="profile.php?prompt_edit=1" class="btn quick-action-btn quick-action-blue btn-lg w-100">
+                            <i class="fas fa-user-edit fa-2x d-block mb-2"></i>
+                            Update Profile
+                          </a>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                          <a href="events.php" class="btn quick-action-btn quick-action-green btn-lg w-100">
+                            <i class="fas fa-calendar-plus fa-2x d-block mb-2"></i>
+                            Event
+                          </a>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                          <a href="jobs.php" class="btn quick-action-btn quick-action-yellow btn-lg w-100">
+                            <i class="fas fa-briefcase fa-2x d-block mb-2"></i>
+                            Post Job
+                          </a>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                          <a href="communications.php" class="btn quick-action-btn quick-action-teal btn-lg w-100">
+                            <i class="fas fa-envelope fa-2x d-block mb-2"></i>
+                            Messages
+                          </a>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                          <a href="mentorship.php" class="btn quick-action-btn quick-action-purple btn-lg w-100">
+                            <i class="fas fa-chalkboard-teacher fa-2x d-block mb-2"></i>
+                            Mentorship
+                          </a>
+                        </div>
+                      <?php endif; ?>
+
                     </div>
+                  </div>
                 </div>
+              </div>
             </div>
 
-            <!-- Mentorship Registration Modal -->
+            <!-- Mentorship Modal (title left as "Mentorship" to match your naming) -->
             <div class="modal fade" id="mentorshipModal" tabindex="-1" aria-labelledby="mentorshipModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="mentorshipModalLabel">Register for Mentorship</h5>
+                            <h5 class="modal-title" id="mentorshipModalLabel">Mentorship</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body mentorship-form">
@@ -378,8 +408,8 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
                                     <label for="role" class="form-label">Role</label>
                                     <select class="form-control" id="role" name="role" required>
                                         <option value="">Select Role</option>
-                                        <option value="student" <?php echo isset($user_info['batch_year']) ? 'selected' : ''; ?>>Student</option>
-                                        <option value="alumni" <?php echo isset($user_info['grad_year']) ? 'selected' : ''; ?>>Alumni</option>
+                                        <option value="student" <?php echo isset($user_info['batch_year']) && empty($user_info['grad_year']) ? 'selected' : ''; ?>>Student</option>
+                                        <option value="alumni"  <?php echo !empty($user_info['grad_year']) ? 'selected' : ''; ?>>Alumni</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
