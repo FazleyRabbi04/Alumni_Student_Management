@@ -1,11 +1,4 @@
 <?php
-/**
- * Job Board
- * - Both Students & Alumni can view and apply to jobs
- * - Only Alumni can post/edit/delete jobs and manage applications
- * - Cleaned UI + black tab text + necessary comments only
- */
-
 require_once '../config/database.php';
 requireLogin();
 
