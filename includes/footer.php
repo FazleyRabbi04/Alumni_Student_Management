@@ -25,8 +25,9 @@
         <div class="mb-3">
             <a href="profile.php">Profiles</a>
             <a href="events.php">Events</a>
-            <a href="mentorship.php">Mentorship</a>
             <a href="jobs.php">Jobs</a>
+            <a href="communications.php">Messages</a>
+            <a href="mentorship.php">Mentorship</a>
             <a href="../pages/terms.php">Terms</a>
             <a href="privacy.php">Privacy</a>
         </div>
