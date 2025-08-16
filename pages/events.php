@@ -860,11 +860,6 @@ foreach ($events as $event) {
             border-left-color: #28a745;
         }
 
-        .rating-stars {
-            color: #ffc107;
-            font-size: 1.1rem;
-        }
-
         .feedback-meta {
             font-size: 0.875rem;
             color: #6c757d;
@@ -1586,15 +1581,6 @@ foreach ($events as $event) {
             modal.querySelector('#feedback_event_title').textContent = eventTitle;
             modal.querySelector('#feedback').value = currentFeedback || '';
 
-            // If there's existing feedback, extract rating if present
-            if (currentFeedback && currentFeedback.includes('Rating:')) {
-                const ratingMatch = currentFeedback.match(/Rating:\s*(\d)/);
-                if (ratingMatch) {
-                    const rating = ratingMatch[1];
-                    const ratingRadio = modal.querySelector(`input[name="rating"][value="${rating}"]`);
-                    if (ratingRadio) ratingRadio.checked = true;
-                }
-            }
         });
 
         // Enhanced feedback form validation
@@ -1602,19 +1588,11 @@ foreach ($events as $event) {
         if (feedbackForm) {
             feedbackForm.addEventListener('submit', function(e) {
                 const feedbackText = this.querySelector('#feedback').value.trim();
-                const selectedRating = this.querySelector('input[name="rating"]:checked');
 
                 if (feedbackText.length < 10) {
                     e.preventDefault();
                     alert('Please provide at least 10 characters of feedback.');
                     return false;
-                }
-
-                // Combine feedback text with rating
-                if (selectedRating) {
-                    const ratingText = `Rating: ${selectedRating.value}/5 stars`;
-                    const combinedFeedback = `${feedbackText}\n\n${ratingText}`;
-                    this.querySelector('#feedback').value = combinedFeedback;
                 }
             });
         }
@@ -2074,17 +2052,6 @@ foreach ($events as $event) {
             `;
 
                     data.feedback.forEach((item, index) => {
-                        // Extract rating if present in feedback
-                        let feedbackText = item.feedback;
-                        let ratingStars = '';
-
-                        const ratingMatch = feedbackText.match(/Rating:\s*(\d)\/5/);
-                        if (ratingMatch) {
-                            const rating = parseInt(ratingMatch[1]);
-                            ratingStars = 'â˜…'.repeat(rating) + 'â˜†'.repeat(5 - rating);
-                            feedbackText = feedbackText.replace(/\n\nRating:\s*\d\/5\s*stars?/i, '');
-                        }
-
                         const badgeClass = item.user_status === 'Alumni' ? 'bg-primary' : 'bg-success';
                         const roleBadgeClass = {
                             'Organizer': 'bg-danger',
@@ -2101,9 +2068,6 @@ foreach ($events as $event) {
                                 <strong>${item.full_name}</strong>
                                 <span class="badge ${badgeClass} ms-2">${item.user_status}</span>
                                 <span class="badge ${roleBadgeClass} ms-1">${item.role}</span>
-                            </div>
-                            ${ratingStars ? `<div class="text-warning fs-5" title="Rating: ${ratingMatch[1]}/5">${ratingStars}</div>` : ''}
-                        </div>
                         <div class="card-body">
                             <p class="card-text">${feedbackText.replace(/\n/g, '<br>')}</p>
                         </div>
