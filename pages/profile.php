@@ -31,18 +31,19 @@ if ($user_info) {
         $year_info = $user_info['batch_year'];
     }
 }
-
 // Handle form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['action'])) {
-        if ($_POST['action'] == 'enable_edit') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    switch ($action) {
+        case 'enable_edit':
             // Verify password to enable edit mode
-            $current_password = $_POST['verify_password'];
+            $current_password = $_POST['verify_password'] ?? '';
             $user_query = "SELECT password FROM person WHERE person_id = ?";
-            $user_stmt = executeQuery($user_query, [$user_id]);
+            $user_stmt  = executeQuery($user_query, [$user_id]);
 
             if ($user_stmt && $user_stmt->rowCount() > 0) {
-                $user_data = $user_stmt->fetch();
+                $user_data = $user_stmt->fetch(PDO::FETCH_ASSOC);
                 if (password_verify($current_password, $user_data['password'])) {
                     $edit_mode = true;
                     $_SESSION['edit_mode'] = true;
@@ -50,93 +51,104 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 } else {
                     $error = 'Incorrect password. Please try again.';
                 }
-            }
-        } elseif ($_POST['action'] == 'update_profile') {
-            // Update profile information
-            $first_name = trim($_POST['first_name']);
-            $last_name = trim($_POST['last_name']);
-            $street = trim($_POST['street']);
-            $city = trim($_POST['city']);
-            $zip = trim($_POST['zip']);
-            $gender = $_POST['gender'];
-            $department = trim($_POST['department']);
-            $date_of_birth = $_POST['date_of_birth'];
-
-            if (empty($first_name) || empty($last_name)) {
-                $error = 'First name and last name are required.';
             } else {
-                try {
-                    $update_query = "UPDATE person SET first_name = ?, last_name = ?, street = ?, city = ?, zip = ?, gender = ?, department = ?, date_of_birth = ? WHERE person_id = ?";
-                    $update_stmt = executeQuery($update_query, [
-                        $first_name, $last_name, $street, $city, $zip,
-                        $gender, $department, $date_of_birth, $user_id
-                    ]);
-
-                    if ($update_stmt) {
-                        $success = 'Profile updated successfully!';
-                        $_SESSION['user_name'] = $first_name . ' ' . $last_name;
-                        $edit_mode = true;
-                        $_SESSION['edit_mode'] = true;
-                        // Handle role shifting (Student → Alumni)
-                        $shift_role = $_POST['shift_role'] ?? '';
-
-                        if ($shift_role === 'Alumni' && $user_type === 'Student') {
-                            try {
-                                // Get batch year from student table (optional)
-                                $batch_stmt = executeQuery("SELECT batch_year FROM student WHERE person_id = ?", [$user_id]);
-                                $batch_year = ($batch_stmt && $batch_stmt->rowCount() > 0) ? $batch_stmt->fetchColumn() : null;
-
-                                $input_grad_year = $_POST['grad_year'] ?? '';
-
-                                if (!preg_match('/^\d{4}$/', $input_grad_year) || $input_grad_year > date('Y') || $input_grad_year < 1950) {
-                                    $error = 'Please enter a valid graduation year.';
-                                } else {
-                                    // Proceed with shifting
-                                    $grad_year = $input_grad_year;
-
-                                    $insert_alumni = executeQuery(
-                                        "INSERT INTO alumni (person_id, grad_year) VALUES (?, ?)",
-                                        [$user_id, $grad_year]
-                                    );
-
-                                    if ($insert_alumni) {
-                                        executeQuery("DELETE FROM student WHERE person_id = ?", [$user_id]);
-                                        $user_type = 'Alumni';
-                                        $year_info = $grad_year;
-                                        $success .= ' Your role has been shifted to Alumni.';
-                                    } else {
-                                        $error .= ' Profile updated, but failed to shift role.';
-                                    }
-                                }
-                            } catch (Exception $e) {
-                                $error .= ' Error while shifting role: ' . $e->getMessage();
-                            }
-                        }
-                    } else {
-                        $error = 'Failed to update profile. Please try again.';
-                    }
-                } catch (Exception $e) {
-                    $error = 'Error updating profile: ' . $e->getMessage();
-                }
+                $error = 'Unable to verify account.';
             }
-        } elseif ($_POST['action'] == 'add_education') {
+            break;
+
+        case 'update_profile':
+            // Update profile information
+            $first_name   = trim($_POST['first_name'] ?? '');
+            $last_name    = trim($_POST['last_name'] ?? '');
+            $street       = trim($_POST['street'] ?? '');
+            $city         = trim($_POST['city'] ?? '');
+            $zip          = trim($_POST['zip'] ?? '');
+            $gender       = $_POST['gender'] ?? '';
+            $department   = trim($_POST['department'] ?? '');
+            $date_of_birth= $_POST['date_of_birth'] ?? '';
+            $shift_role   = $_POST['shift_role'] ?? '';
+
+            if ($first_name === '' || $last_name === '') {
+                $error = 'First name and last name are required.';
+                break;
+            }
+
+            try {
+                $update_query = "UPDATE person
+                                 SET first_name = ?, last_name = ?, street = ?, city = ?, zip = ?, gender = ?, department = ?, date_of_birth = ?
+                                 WHERE person_id = ?";
+                $update_stmt = executeQuery($update_query, [
+                    $first_name, $last_name, $street, $city, $zip,
+                    $gender, $department, $date_of_birth, $user_id
+                ]);
+
+                if ($update_stmt) {
+                    $success = 'Profile updated successfully!';
+                    $_SESSION['user_name'] = $first_name . ' ' . $last_name;
+                    $edit_mode = true;
+                    $_SESSION['edit_mode'] = true;
+
+                    // Handle role shifting (Student → Alumni)
+                    if ($shift_role === 'Alumni' && $user_type === 'Student') {
+                        try {
+                            $batch_stmt = executeQuery("SELECT batch_year FROM student WHERE person_id = ?", [$user_id]);
+                            $batch_year = ($batch_stmt && $batch_stmt->rowCount() > 0) ? $batch_stmt->fetchColumn() : null;
+
+                            $input_grad_year = $_POST['grad_year'] ?? '';
+                            if (!preg_match('/^\d{4}$/', $input_grad_year) || $input_grad_year > date('Y') || $input_grad_year < 1950) {
+                                $error = 'Please enter a valid graduation year.';
+                            } else {
+                                $grad_year = $input_grad_year;
+
+                                $insert_alumni = executeQuery(
+                                    "INSERT INTO alumni (person_id, grad_year) VALUES (?, ?)",
+                                    [$user_id, $grad_year]
+                                );
+
+                                if ($insert_alumni) {
+                                    executeQuery("DELETE FROM student WHERE person_id = ?", [$user_id]);
+                                    $user_type = 'Alumni';
+                                    $year_info = $grad_year;
+                                    $success  .= ' Your role has been shifted to Alumni.';
+                                } else {
+                                    $error .= ' Profile updated, but failed to shift role.';
+                                }
+                            }
+                        } catch (Exception $e) {
+                            $error .= ' Error while shifting role: ' . $e->getMessage();
+                        }
+                    }
+                } else {
+                    $error = 'Failed to update profile. Please try again.';
+                }
+            } catch (Exception $e) {
+                $error = 'Error updating profile: ' . $e->getMessage();
+            }
+            break;
+
+        case 'add_education':
             // Add education record
-            $degree = trim($_POST['degree']);
-            $institution = trim($_POST['institution']);
-            $start_date = $_POST['edu_start_date'];
-            $end_date = $_POST['edu_end_date'] ?: null;
+            $degree      = trim($_POST['degree'] ?? '');
+            $institution = trim($_POST['institution'] ?? '');
+            $start_date  = $_POST['edu_start_date'] ?? '';
+            $end_date    = $_POST['edu_end_date'] ?: null;
 
-            if (!empty($degree) && !empty($institution) && !empty($start_date)) {
+            if ($degree !== '' && $institution !== '' && $start_date !== '') {
                 try {
-                    $edu_query = "INSERT INTO education_history (person_id, degree, institution, start_date, end_date) VALUES (?, ?, ?, ?, ?)";
-                    $edu_stmt = executeQuery($edu_query, [$user_id, $degree, $institution, $start_date, $end_date]);
-
-                    if ($edu_stmt) {
-                        $success = 'Education record added successfully!';
-                        $edit_mode = true;
-                        $_SESSION['edit_mode'] = true;
+                    if (!empty($end_date) && strtotime($end_date) < strtotime($start_date)) {
+                        $error = 'End date cannot be before start date.';
                     } else {
-                        $error = 'Failed to add education record.';
+                        $edu_query = "INSERT INTO education_history (person_id, degree, institution, start_date, end_date)
+                                      VALUES (?, ?, ?, ?, ?)";
+                        $edu_stmt = executeQuery($edu_query, [$user_id, $degree, $institution, $start_date, $end_date]);
+
+                        if ($edu_stmt) {
+                            $success = 'Education record added successfully!';
+                            $edit_mode = true;
+                            $_SESSION['edit_mode'] = true;
+                        } else {
+                            $error = 'Failed to add education record.';
+                        }
                     }
                 } catch (Exception $e) {
                     $error = 'Error adding education: ' . $e->getMessage();
@@ -144,23 +156,175 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 $error = 'Please fill in all required education fields.';
             }
-        } elseif ($_POST['action'] == 'add_employment') {
-            // Add employment record
-            $job_title = trim($_POST['job_title']);
-            $company = trim($_POST['company']);
-            $designation = trim($_POST['designation']);
-            $emp_start_date = $_POST['emp_start_date'];
-            $emp_end_date = $_POST['emp_end_date'] ?: null;
+            break;
 
-            if (!empty($job_title) && !empty($company) && !empty($emp_start_date)) {
+        case 'add_skill':
+            // person_skill stores ONE row per person with a CSV of skills in `skill`
+            $skill_name = trim($_POST['skill_name'] ?? '');
+            if ($skill_name === '') {
+                $error = 'Please provide a skill name.';
+                break;
+            }
+
+            try {
+                $row = null;
+                $sel = executeQuery("SELECT skill FROM person_skill WHERE person_id = ?", [$user_id]);
+                if ($sel && $sel->rowCount() > 0) {
+                    $row = $sel->fetch(PDO::FETCH_ASSOC);
+                }
+
+                $skills_arr = [];
+                if ($row && !empty($row['skill'])) {
+                    $skills_arr = array_filter(array_map('trim', explode(',', $row['skill'])));
+                }
+
+                $lower = array_map('mb_strtolower', $skills_arr);
+                if (in_array(mb_strtolower($skill_name), $lower, true)) {
+                    $error = 'You already have this skill.';
+                    break;
+                }
+
+                $skills_arr[] = $skill_name;
+                $csv = implode(', ', $skills_arr);
+
+                if ($row) {
+                    $ok = executeQuery("UPDATE person_skill SET skill = ? WHERE person_id = ?", [$csv, $user_id]);
+                } else {
+                    $ok = executeQuery("INSERT INTO person_skill (person_id, skill) VALUES (?, ?)", [$user_id, $csv]);
+                }
+
+                if ($ok) {
+                    $success = 'Skill added successfully!';
+                    $edit_mode = true; $_SESSION['edit_mode'] = true;
+                } else {
+                    $error = 'Failed to add skill.';
+                }
+            } catch (Exception $e) {
+                $error = 'Error adding skill: ' . $e->getMessage();
+            }
+            break;
+
+        case 'delete_skill':
+            // Remove one item from the CSV in person_skill
+            $skill_name = trim($_POST['skill_name'] ?? '');
+            if ($skill_name === '') {
+                $error = 'Invalid skill.';
+                break;
+            }
+
+            try {
+                $sel = executeQuery("SELECT skill FROM person_skill WHERE person_id = ?", [$user_id]);
+                if ($sel && $sel->rowCount() > 0) {
+                    $row = $sel->fetch(PDO::FETCH_ASSOC);
+                    $skills_arr = array_filter(array_map('trim', explode(',', $row['skill'])));
+                    $skills_arr = array_values(array_filter($skills_arr, function($s) use ($skill_name) {
+                        return mb_strtolower($s) !== mb_strtolower($skill_name);
+                    }));
+                    $csv = implode(', ', $skills_arr);
+
+                    if ($csv === '') {
+                        $ok = executeQuery("DELETE FROM person_skill WHERE person_id = ?", [$user_id]);
+                    } else {
+                        $ok = executeQuery("UPDATE person_skill SET skill = ? WHERE person_id = ?", [$csv, $user_id]);
+                    }
+
+                    if ($ok) {
+                        $success = 'Skill removed.';
+                        $edit_mode = true; $_SESSION['edit_mode'] = true;
+                    } else {
+                        $error = 'Failed to remove skill.';
+                    }
+                } else {
+                    $error = 'No skills found for this profile.';
+                }
+            } catch (Exception $e) {
+                $error = 'Error removing skill: ' . $e->getMessage();
+            }
+            break;
+
+        case 'add_interest':
+            // Insert into alumni_interest or student_interest based on $user_type
+            $interest_name = trim($_POST['interest_name'] ?? '');
+            if ($interest_name === '') {
+                $error = 'Please provide an interest name.';
+                break;
+            }
+            if (!in_array($user_type, ['Student', 'Alumni'], true)) {
+                $error = 'Unknown user type for adding interests.';
+                break;
+            }
+
+            try {
+                $int_stmt = executeQuery("SELECT interest_id FROM interest WHERE interest_name = ?", [$interest_name]);
+                if ($int_stmt && ($row = $int_stmt->fetch(PDO::FETCH_ASSOC))) {
+                    $interest_id = (int)$row['interest_id'];
+                } else {
+                    $ins_int = executeQuery("INSERT INTO interest (interest_name) VALUES (?)", [$interest_name]);
+                    if (!$ins_int) {
+                        throw new Exception('Failed to create interest.');
+                    }
+                    $re_sel = executeQuery("SELECT interest_id FROM interest WHERE interest_name = ?", [$interest_name]);
+                    $interest_id = (int)$re_sel->fetchColumn();
+                }
+
+                if ($user_type === 'Alumni') {
+                    $chk = executeQuery("SELECT 1 FROM alumni_interest WHERE person_id = ? AND interest_id = ?", [$user_id, $interest_id]);
+                    if ($chk && $chk->rowCount() > 0) {
+                        $error = 'You already added this interest.';
+                    } else {
+                        $ok = executeQuery("INSERT INTO alumni_interest (person_id, interest_id) VALUES (?, ?)", [$user_id, $interest_id]);
+                        if ($ok) { $success = 'Interest added successfully!'; $edit_mode = true; $_SESSION['edit_mode'] = true; }
+                        else { $error = 'Failed to add interest.'; }
+                    }
+                } else { // Student
+                    $chk = executeQuery("SELECT 1 FROM student_interest WHERE person_id = ? AND interest_id = ?", [$user_id, $interest_id]);
+                    if ($chk && $chk->rowCount() > 0) {
+                        $error = 'You already added this interest.';
+                    } else {
+                        $ok = executeQuery("INSERT INTO student_interest (person_id, interest_id) VALUES (?, ?)", [$user_id, $interest_id]);
+                        if ($ok) { $success = 'Interest added successfully!'; $edit_mode = true; $_SESSION['edit_mode'] = true; }
+                        else { $error = 'Failed to add interest.'; }
+                    }
+                }
+            } catch (Exception $e) {
+                $error = 'Error adding interest: ' . $e->getMessage();
+            }
+            break;
+
+        case 'delete_interest':
+            // Delete from both interest link tables (safe regardless of current role)
+            $interest_id = (int)($_POST['interest_id'] ?? 0);
+            if ($interest_id <= 0) {
+                $error = 'Invalid interest.';
+                break;
+            }
+            try {
+                executeQuery("DELETE FROM alumni_interest  WHERE person_id = ? AND interest_id = ?", [$user_id, $interest_id]);
+                executeQuery("DELETE FROM student_interest WHERE person_id = ? AND interest_id = ?", [$user_id, $interest_id]);
+                $success = 'Interest removed.';
+                $edit_mode = true; $_SESSION['edit_mode'] = true;
+            } catch (Exception $e) {
+                $error = 'Error removing interest: ' . $e->getMessage();
+            }
+            break;
+
+        case 'add_employment':
+            // Add employment record
+            $job_title     = trim($_POST['job_title'] ?? '');
+            $company       = trim($_POST['company'] ?? '');
+            $designation   = trim($_POST['designation'] ?? '');
+            $emp_start_date= $_POST['emp_start_date'] ?? '';
+            $emp_end_date  = $_POST['emp_end_date'] ?: null;
+
+            if ($job_title !== '' && $company !== '' && $emp_start_date !== '') {
                 try {
-                    $emp_query = "INSERT INTO employment_history (person_id, job_title, company, designation, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)";
+                    $emp_query = "INSERT INTO employment_history (person_id, job_title, company, designation, start_date, end_date)
+                                  VALUES (?, ?, ?, ?, ?, ?)";
                     $emp_stmt = executeQuery($emp_query, [$user_id, $job_title, $company, $designation, $emp_start_date, $emp_end_date]);
 
                     if ($emp_stmt) {
                         $success = 'Employment record added successfully!';
-                        $edit_mode = true;
-                        $_SESSION['edit_mode'] = true;
+                        $edit_mode = true; $_SESSION['edit_mode'] = true;
                     } else {
                         $error = 'Failed to add employment record.';
                     }
@@ -170,23 +334,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 $error = 'Please fill in all required employment fields.';
             }
-        } elseif ($_POST['action'] == 'add_achievement') {
-            // Add achievement record
-            $ach_title = trim($_POST['ach_title']);
-            $ach_date = $_POST['ach_date'];
-            $organization = trim($_POST['organization']);
-            $description = trim($_POST['description']);
-            $type = $_POST['type'];
+            break;
 
-            if (!empty($ach_title) && !empty($ach_date)) {
+        case 'add_achievement':
+            // Add achievement record
+            $ach_title    = trim($_POST['ach_title'] ?? '');
+            $ach_date     = $_POST['ach_date'] ?? '';
+            $organization = trim($_POST['organization'] ?? '');
+            $description  = trim($_POST['description'] ?? '');
+            $type         = $_POST['type'] ?? '';
+
+            if ($ach_title !== '' && $ach_date !== '') {
                 try {
-                    $ach_query = "INSERT INTO achievement (person_id, ach_title, ach_date, organization, description, type) VALUES (?, ?, ?, ?, ?, ?)";
+                    $ach_query = "INSERT INTO achievement (person_id, ach_title, ach_date, organization, description, type)
+                                  VALUES (?, ?, ?, ?, ?, ?)";
                     $ach_stmt = executeQuery($ach_query, [$user_id, $ach_title, $ach_date, $organization, $description, $type]);
 
                     if ($ach_stmt) {
                         $success = 'Achievement added successfully!';
-                        $edit_mode = true;
-                        $_SESSION['edit_mode'] = true;
+                        $edit_mode = true; $_SESSION['edit_mode'] = true;
                     } else {
                         $error = 'Failed to add achievement.';
                     }
@@ -196,61 +362,123 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 $error = 'Please fill in all required achievement fields.';
             }
-        } elseif ($_POST['action'] == 'add_email') {
+            break;
+
+        case 'add_email':
             // Add secondary email
-            $new_email = trim($_POST['new_email']);
-            if (!empty($new_email) && filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
-                try {
-                    // Check if email already exists
-                    $check_query = "SELECT email FROM email_address WHERE email = ?";
-                    $check_stmt = executeQuery($check_query, [$new_email]);
-                    if ($check_stmt && $check_stmt->rowCount() > 0) {
-                        $error = 'This email is already in use.';
-                    } else {
-                        $email_query = "INSERT INTO email_address (person_id, email) VALUES (?, ?)";
-                        $email_stmt = executeQuery($email_query, [$user_id, $new_email]);
-                        if ($email_stmt) {
-                            $success = 'Email added successfully!';
-                            $edit_mode = true;
-                            $_SESSION['edit_mode'] = true;
-                        } else {
-                            $error = 'Failed to add email.';
-                        }
-                    }
-                } catch (Exception $e) {
-                    $error = 'Error adding email: ' . $e->getMessage();
-                }
-            } else {
+            $new_email = trim($_POST['new_email'] ?? '');
+            if ($new_email === '' || !filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
                 $error = 'Please provide a valid email address.';
+                break;
             }
-        } elseif ($_POST['action'] == 'add_phone') {
-            // Add secondary phone
-            $new_phone = trim($_POST['new_phone']);
-            if (!empty($new_phone) && preg_match('/^[0-9+\-\s]{10,15}$/', $new_phone)) {
-                try {
-                    // Check if phone already exists
-                    $check_query = "SELECT phone_number FROM person_phone WHERE phone_number = ?";
-                    $check_stmt = executeQuery($check_query, [$new_phone]);
-                    if ($check_stmt && $check_stmt->rowCount() > 0) {
-                        $error = 'This phone number is already in use.';
+
+            try {
+                $check_query = "SELECT email FROM email_address WHERE email = ?";
+                $check_stmt  = executeQuery($check_query, [$new_email]);
+                if ($check_stmt && $check_stmt->rowCount() > 0) {
+                    $error = 'This email is already in use.';
+                } else {
+                    $email_query = "INSERT INTO email_address (person_id, email) VALUES (?, ?)";
+                    $email_stmt  = executeQuery($email_query, [$user_id, $new_email]);
+                    if ($email_stmt) {
+                        $success = 'Email added successfully!';
+                        $edit_mode = true; $_SESSION['edit_mode'] = true;
                     } else {
-                        $phone_query = "INSERT INTO person_phone (person_id, phone_number) VALUES (?, ?)";
-                        $phone_stmt = executeQuery($phone_query, [$user_id, $new_phone]);
-                        if ($phone_stmt) {
-                            $success = 'Phone number added successfully!';
-                            $edit_mode = true;
-                            $_SESSION['edit_mode'] = true;
-                        } else {
-                            $error = 'Failed to add phone number.';
-                        }
+                        $error = 'Failed to add email.';
                     }
-                } catch (Exception $e) {
-                    $error = 'Error adding phone: ' . $e->getMessage();
                 }
-            } else {
-                $error = 'Please provide a valid phone number (10-15 digits, +, -, or spaces).';
+            } catch (Exception $e) {
+                $error = 'Error adding email: ' . $e->getMessage();
             }
-        }
+            break;
+
+        case 'add_phone':
+            // Add secondary phone
+            $new_phone = trim($_POST['new_phone'] ?? '');
+            if ($new_phone === '' || !preg_match('/^[0-9+\-\s]{10,15}$/', $new_phone)) {
+                $error = 'Please provide a valid phone number (10-15 digits, +, -, or spaces).';
+                break;
+            }
+
+            try {
+                $check_query = "SELECT phone_number FROM person_phone WHERE phone_number = ?";
+                $check_stmt  = executeQuery($check_query, [$new_phone]);
+                if ($check_stmt && $check_stmt->rowCount() > 0) {
+                    $error = 'This phone number is already in use.';
+                } else {
+                    $phone_query = "INSERT INTO person_phone (person_id, phone_number) VALUES (?, ?)";
+                    $phone_stmt  = executeQuery($phone_query, [$user_id, $new_phone]);
+                    if ($phone_stmt) {
+                        $success = 'Phone number added successfully!';
+                        $edit_mode = true; $_SESSION['edit_mode'] = true;
+                    } else {
+                        $error = 'Failed to add phone number.';
+                    }
+                }
+            } catch (Exception $e) {
+                $error = 'Error adding phone: ' . $e->getMessage();
+            }
+            break;
+
+        case 'change_password':
+            $current_password = trim($_POST['current_password'] ?? '');
+            $new_password     = trim($_POST['new_password'] ?? '');
+            $confirm_password = trim($_POST['confirm_password'] ?? '');
+
+            try {
+                if ($current_password === '' || $new_password === '' || $confirm_password === '') {
+                    $error = 'All fields are required.';
+                    break;
+                }
+                if ($new_password !== $confirm_password) {
+                    $error = 'New password and confirmation do not match.';
+                    break;
+                }
+                if (
+                    strlen($new_password) < 8
+                ) {
+                    $error = 'Password must be at least 8 characters.';
+                    break;
+                }
+
+                $stmt = executeQuery("SELECT password FROM person WHERE person_id = ?", [$user_id]);
+                $row  = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+
+                if (!$row || !password_verify($current_password, $row['password'])) {
+                    $error = 'Your current password is incorrect.';
+                    break;
+                }
+                if (password_verify($new_password, $row['password'])) {
+                    $error = 'New password cannot be the same as your current password.';
+                    break;
+                }
+
+                $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
+                $ok = executeQuery("UPDATE person SET password = ? WHERE person_id = ?", [$new_hash, $user_id]);
+
+                if ($ok) {
+                    // Force logout and redirect to sign-in:
+                    if (session_status() === PHP_SESSION_ACTIVE) {
+                        $_SESSION = [];
+                        if (ini_get('session.use_cookies')) {
+                            $p = session_get_cookie_params();
+                            setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+                        }
+                        session_destroy();
+                    }
+                    header('Location: ../auth/signin.php?pwd_changed=1');
+                    exit;
+                } else {
+                    $error = 'Failed to update password. Please try again.';
+                }
+            } catch (Exception $e) {
+                $error = 'Error changing password: ' . $e->getMessage();
+            }
+            break;
+
+        default:
+            // Unknown or missing action
+            break;
     }
 }
 
@@ -303,6 +531,38 @@ if ($user_info) {
         $achievements = $achievement_stmt->fetchAll();
     }
 }
+// Get skills (CSV from person_skill)
+$skills = [];
+if ($user_info) {
+    $stmt = executeQuery("SELECT skill FROM person_skill WHERE person_id = ?", [$user_id]);
+    if ($stmt && $stmt->rowCount() > 0) {
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!empty($row['skill'])) {
+            $skills = array_values(array_filter(array_map('trim', explode(',', $row['skill']))));
+        }
+    }
+}
+
+// Get interests (union of student/alumni link tables)
+$interests = [];
+if ($user_info) {
+    $interests_stmt = executeQuery("
+        SELECT i.interest_id, i.interest_name
+        FROM interest i
+        JOIN alumni_interest ai ON ai.interest_id = i.interest_id
+        WHERE ai.person_id = ?
+        UNION
+        SELECT i2.interest_id, i2.interest_name
+        FROM interest i2
+        JOIN student_interest si ON si.interest_id = i2.interest_id
+        WHERE si.person_id = ?
+        ORDER BY interest_name ASC
+    ", [$user_id, $user_id]);
+    if ($interests_stmt) {
+        $interests = $interests_stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -416,14 +676,14 @@ if ($user_info) {
             <div class="col-md-3 text-end">
                 <?php if (!$edit_mode): ?>
                     <button class="btn btn-edit" data-bs-toggle="modal" data-bs-target="#verifyModal">
-                        <i class="fas fa-edit me-2"></i>Edit Profile
+                    <i class="fas fa-edit me-2"></i>Edit Profile
                     </button>
                 <?php else: ?>
                     <span class="badge bg-success fs-6">
                         <i class="fas fa-check me-1"></i>Edit Mode Active
                     </span>
                     <a href="profile.php?cancel_edit=1" class="btn btn-outline-danger mt-2">
-                        <i class="fas fa-times-circle me-1"></i>Exit Edit Mode
+                        <i class="fas fa-times-circle me-1"></i>Save Changes
                     </a>
                 <?php endif; ?>
             </div>
@@ -559,11 +819,7 @@ if ($user_info) {
                                     </div>
                                 </div>
                             <?php endif; ?>
-                            <div class="text-end mt-3">
-                                <a href="profile.php?cancel_edit=1" class="btn btn-outline-secondary me-2">Cancel</a>
-                                <button type="submit" class="btn btn-primary">Save Changes</button>
-                            </div>
-                        </form>
+                            </form>
                     <?php else: ?>
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -620,7 +876,73 @@ if ($user_info) {
                     <?php endif; ?>
                 </div>
             </div>
+              <!-- Skills -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Skills</h5>
+        <?php if ($edit_mode): ?>
+            <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addSkillModal">
+                <i class="fas fa-plus me-1"></i>Add Skill
+            </button>
+        <?php endif; ?>
+    </div>
+    <div class="card-body">
+        <?php if (empty($skills)): ?>
+            <p class="text-muted text-center py-3">No skills added yet.</p>
+        <?php else: ?>
+            <div class="d-flex flex-wrap gap-2">
+                <?php foreach ($skills as $sk): ?>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-navy me-2"><?php echo htmlspecialchars($sk); ?></span>
+                        <?php if ($edit_mode): ?>
+                            <form method="POST" action="">
+                                <input type="hidden" name="action" value="delete_skill">
+                                <input type="hidden" name="skill_name" value="<?php echo htmlspecialchars($sk); ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
 
+<!-- Interests -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-heart me-2"></i>Interests</h5>
+        <?php if ($edit_mode): ?>
+            <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addInterestModal">
+                <i class="fas fa-plus me-1"></i>Add Interest
+            </button>
+        <?php endif; ?>
+    </div>
+    <div class="card-body">
+        <?php if (empty($interests)): ?>
+            <p class="text-muted text-center py-3">No interests added yet.</p>
+        <?php else: ?>
+            <div class="d-flex flex-wrap gap-2">
+                <?php foreach ($interests as $in): ?>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-navy me-2"><?php echo htmlspecialchars($in['interest_name']); ?></span>
+                        <?php if ($edit_mode): ?>
+                            <form method="POST" action="">
+                                <input type="hidden" name="action" value="delete_interest">
+                                <input type="hidden" name="interest_id" value="<?php echo (int)$in['interest_id']; ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
             <!-- Education History -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -715,7 +1037,6 @@ if ($user_info) {
                 </div>
             </div>
         </div>
-
         <!-- Quick Stats Sidebar -->
         <div class="col-lg-4">
             <div class="card">
@@ -728,7 +1049,7 @@ if ($user_info) {
                         <span class="badge bg-primary"><?php echo count($education_history); ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Work Experience:</span>
+                        <span>Employment History:</span>
                         <span class="badge bg-success"><?php echo count($employment_history); ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
@@ -736,12 +1057,20 @@ if ($user_info) {
                         <span class="badge bg-warning"><?php echo count($achievements); ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Emails:</span>
+                        <span>Email Adressess:</span>
                         <span class="badge bg-info"><?php echo count($emails); ?></span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Phone Numbers:</span>
                         <span class="badge bg-info"><?php echo count($phones); ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Skills:</span>
+                        <span class="badge bg-info"><?php echo count($skills); ?></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Interests:</span>
+                        <span class="badge bg-info"><?php echo count($interests); ?></span>
                     </div>
                     <hr>
                     <small class="text-muted">
@@ -759,9 +1088,10 @@ if ($user_info) {
                     <p class="small text-muted mb-3">
                         Your email, phone, and Student ID are protected and cannot be changed for security reasons.
                     </p>
-                    <a href="change_password.php" class="btn btn-outline-primary btn-sm w-100 action-link">
+                    <button class="btn btn-outline-primary btn-sm w-100 action-link"
+                        data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                         <i class="fas fa-key me-2"></i>Change Password
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -784,10 +1114,6 @@ if ($user_info) {
                         <label for="verify_password" class="form-label">Current Password</label>
                         <input type="password" class="form-control" id="verify_password" name="verify_password" required>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Verify & Edit</button>
                 </div>
             </form>
         </div>
@@ -989,6 +1315,118 @@ if ($user_info) {
         </div>
     </div>
 </div>
+<!-- Add Skill Modal -->
+<div class="modal fade" id="addSkillModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-lightbulb me-2"></i>Add Skill</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="">
+        <div class="modal-body">
+          <input type="hidden" name="action" value="add_skill">
+          <div class="mb-3">
+            <label for="skill_name" class="form-label">Skill Name *</label>
+            <input type="text" class="form-control" id="skill_name" name="skill_name" required
+                   placeholder="e.g., JavaScript, SQL, AutoCAD">
+            <small class="text-muted">Adds to your skills list (stored as CSV internally).</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Skill</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Interest Modal -->
+<div class="modal fade" id="addInterestModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-heart me-2"></i>Add Interest</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="">
+        <div class="modal-body">
+          <input type="hidden" name="action" value="add_interest">
+          <div class="mb-3">
+            <label for="interest_name" class="form-label">Interest Name *</label>
+            <input type="text" class="form-control" id="interest_name" name="interest_name" required
+                   placeholder="e.g., AI, Public Speaking, Startups">
+          </div>
+          <small class="text-muted">Saved under your current role (Student/Alumni).</small>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Interest</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-navy">
+        <h5 class="modal-title" id="changePasswordLabel">
+          <i class="fas fa-key me-2"></i>Change Password
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form method="POST" action="">
+        <div class="modal-body">
+          <input type="hidden" name="action" value="change_password">
+
+          <div class="mb-3">
+            <label class="form-label" for="current_password">Current Password</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="current_password" name="current_password" required>
+              <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="current_password">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="new_password">New Password</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="new_password" name="new_password" required>
+              <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="new_password">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div class="form-text">
+              Must be at least 8 characters, include uppercase, lowercase, and a number.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="confirm_password">Confirm New Password</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+              <button class="btn btn-outline-secondary toggle-pass" type="button" data-target="confirm_password">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <div id="matchHelp" class="form-text"></div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button id="submitChangePassword" type="submit" class="btn btn-primary">Update Password</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
 
 <?php include '../includes/footer.php'; ?>
 
@@ -1050,6 +1488,50 @@ if ($user_info) {
             roleSelect.addEventListener('change', toggleGradYear);
         }
     });
+    document.addEventListener('DOMContentLoaded', function () {
+  // Toggle show/hide password
+  document.querySelectorAll('.toggle-pass').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const id = this.getAttribute('data-target');
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+      const icon = this.querySelector('i');
+      if (icon) icon.classList.toggle('fa-eye-slash');
+    });
+  });
+
+  // Live match check (UX)
+  const newPwd = document.getElementById('new_password');
+  const confirmPwd = document.getElementById('confirm_password');
+  const matchHelp = document.getElementById('matchHelp');
+  const submitBtn = document.getElementById('submitChangePassword');
+
+  function checkMatch() {
+    if (!newPwd || !confirmPwd || !matchHelp || !submitBtn) return;
+    if (confirmPwd.value.length === 0) {
+      matchHelp.textContent = '';
+      submitBtn.disabled = false;
+      return;
+    }
+    if (newPwd.value === confirmPwd.value) {
+      matchHelp.textContent = 'Passwords match.';
+      matchHelp.classList.remove('text-danger');
+      matchHelp.classList.add('text-success');
+      submitBtn.disabled = false;
+    } else {
+      matchHelp.textContent = 'Passwords do not match.';
+      matchHelp.classList.remove('text-success');
+      matchHelp.classList.add('text-danger');
+      submitBtn.disabled = true;
+    }
+  }
+  if (newPwd && confirmPwd) {
+    newPwd.addEventListener('input', checkMatch);
+    confirmPwd.addEventListener('input', checkMatch);
+  }
+});
+
 </script>
 </body>
 </html>
