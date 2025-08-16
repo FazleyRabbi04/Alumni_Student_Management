@@ -589,7 +589,7 @@ $stats = $stats_stmt ? $stats_stmt->fetch(PDO::FETCH_ASSOC) : [];
             document.getElementById('jobDetailDescription').innerHTML = description.replace(/\n/g, '<br>');
         });
 
-        // Edit job modal
+        // edit job modal
         const editJobModal = document.getElementById('editJobModal');
         editJobModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
