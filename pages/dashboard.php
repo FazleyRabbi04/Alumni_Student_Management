@@ -2,31 +2,34 @@
 require_once '../config/database.php';
 requireLogin();
 
+/**
+ * DASHBOARD
+ * - Shows top-line stats and quick actions.
+ * - Uniform Quick Actions for all users (no role gating):
+ *   Update Profile, Event, Job, Messages, Mentorship
+ */
+
 $user_info = getUserInfo($_SESSION['user_id']);
 $user_id   = $_SESSION['user_id'];
-
-// ---- Role flags (derived from profile fields you already store) ----
-$is_student = !empty($user_info['batch_year']) && empty($user_info['grad_year']);
-$is_alumni  = !empty($user_info['grad_year']);
 
 // ---------------- Dashboard stats ----------------
 $stats = [];
 
 // Total upcoming events
-$events_stmt  = executeQuery("SELECT COUNT(*) as total FROM events WHERE event_date >= CURDATE()");
+$events_stmt  = executeQuery("SELECT COUNT(*) AS total FROM events WHERE event_date >= CURDATE()");
 $stats['upcoming_events'] = $events_stmt ? (int)($events_stmt->fetch()['total'] ?? 0) : 0;
 
 // User's registered events
-$user_events_stmt  = executeQuery("SELECT COUNT(*) as total FROM registers WHERE person_id = ? AND status != 'Cancelled'", [$user_id]);
+$user_events_stmt  = executeQuery("SELECT COUNT(*) AS total FROM registers WHERE person_id = ? AND status != 'Cancelled'", [$user_id]);
 $stats['my_events'] = $user_events_stmt ? (int)($user_events_stmt->fetch()['total'] ?? 0) : 0;
 
 // Recent jobs (last 30 days)
-$jobs_stmt  = executeQuery("SELECT COUNT(*) as total FROM job WHERE post_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
+$jobs_stmt  = executeQuery("SELECT COUNT(*) AS total FROM job WHERE post_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
 $stats['recent_jobs'] = $jobs_stmt ? (int)($jobs_stmt->fetch()['total'] ?? 0) : 0;
 
-// Unread messages
+// Unread messages for this user
 $comm_stmt = executeQuery(
-    "SELECT COUNT(DISTINCT c.comm_id) as total
+    "SELECT COUNT(DISTINCT c.comm_id) AS total
      FROM communication c
      JOIN sends s_you   ON s_you.comm_id = c.comm_id 
                        AND s_you.person_id = ? 
@@ -37,9 +40,9 @@ $comm_stmt = executeQuery(
 );
 $stats['unread_messages'] = $comm_stmt ? (int)($comm_stmt->fetch()['total'] ?? 0) : 0;
 
-// User's registered mentorship sessions (upcoming)
+// Upcoming mentorship sessions the user is registered for
 $mentorship_stmt  = executeQuery(
-    "SELECT COUNT(*) as total
+    "SELECT COUNT(*) AS total
      FROM mentorship_sessions ms
      JOIN registers r ON ms.id = r.event_id
      WHERE r.person_id = ? AND ms.date >= CURDATE()",
@@ -47,7 +50,7 @@ $mentorship_stmt  = executeQuery(
 );
 $stats['mentorship_sessions'] = $mentorship_stmt ? (int)($mentorship_stmt->fetch()['total'] ?? 0) : 0;
 
-// ---------------- Available mentorship sessions for form ----------------
+// ---------------- Available mentorship sessions (for modal form) ----------------
 $available_sessions_stmt = executeQuery(
     "SELECT id, title, date
      FROM mentorship_sessions
@@ -56,7 +59,7 @@ $available_sessions_stmt = executeQuery(
 );
 $available_sessions = $available_sessions_stmt ? $available_sessions_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-// ---------------- Popup datasets (small + fast) ----------------
+// ---------------- Popup datasets (small & fast) ----------------
 $popup_upcoming_stmt = executeQuery(
     "SELECT event_title, event_date, city, venue
      FROM events
@@ -113,13 +116,18 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - Alumni Relationship & Networking System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <link href="../assets/css/custom.css" rel="stylesheet">
+
+    <!-- Vendor CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet" />
+
+    <!-- Project CSS -->
+    <link href="../assets/css/custom.css" rel="stylesheet" />
+
     <style>
         body { font-family: 'Open Sans', sans-serif; background-color: #faf5f6; color: #002147; }
         .dashboard-card { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -136,8 +144,12 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
         .btn-outline-purple:hover { background-color:#6f42c1; color:#fff; }
 
         /* Quick Actions */
-        .quick-action-btn { font-weight:600; border-width:2.5px; border-radius:12px; padding:26px 0 18px 0; font-size:1.17rem;
-            transition:background .2s, color .2s, border-color .2s; box-shadow:0 2px 12px rgba(40,40,60,0.02); margin-bottom:6px; }
+        .quick-action-btn {
+            font-weight:600; border-width:2.5px; border-radius:12px;
+            padding:26px 0 18px 0; font-size:1.17rem;
+            transition:background .2s, color .2s, border-color .2s;
+            box-shadow:0 2px 12px rgba(40,40,60,0.02); margin-bottom:6px;
+        }
         .quick-action-blue   { border-color:#0d6efd !important; color:#0d6efd !important; background:#fff !important; }
         .quick-action-blue:hover, .quick-action-blue:focus { background:#0d6efd !important; color:#fff !important; border-color:#0d6efd !important; }
         .quick-action-green  { border-color:#198754 !important; color:#198754 !important; background:#fff !important; }
@@ -184,6 +196,7 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
 <div class="container-fluid">
     <div class="row">
         <main class="col-12 px-4">
+            <!-- Page header -->
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2 text-center w-100"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
             </div>
@@ -214,7 +227,7 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
                 <?php unset($_SESSION['error']); ?>
             <?php endif; ?>
 
-            <!-- Statistics Cards (open popup on click) -->
+            <!-- Statistics Cards -->
             <div class="row mb-4 justify-content-center">
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card dashboard-card primary h-100 js-open-stat" data-type="upcoming" role="button" tabindex="0">
@@ -287,94 +300,61 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
                 </div>
             </div>
 
-            <!-- Quick Actions (role-aware, and renamed labels) -->
+            <!-- Quick Actions (uniform for everyone) -->
             <div class="row mb-4 justify-content-center">
-              <div class="col-12">
-                <div class="card">
-                  <div class="card-header text-center"><i class="fas fa-bolt me-2"></i>Quick Actions</div>
-                  <div class="card-body text-center">
-                    <div class="row text-center justify-content-center g-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header text-center"><i class="fas fa-bolt me-2"></i>Quick Actions</div>
+                        <div class="card-body text-center">
+                            <div class="row text-center justify-content-center g-3">
 
-                      <?php if ($is_student): ?>
-                        <!-- STUDENT: Update Profile, Event, Jobs, Mentorship -->
-                        <div class="col-md-3 mb-3">
-                          <a href="profile.php?prompt_edit=1" class="btn quick-action-btn quick-action-blue btn-lg w-100">
-                            <i class="fas fa-user-edit fa-2x d-block mb-2"></i>
-                            Update Profile
-                          </a>
+                                <div class="col-md-3 mb-3">
+                                    <a href="profile.php?prompt_edit=1" class="btn quick-action-btn quick-action-blue btn-lg w-100">
+                                        <i class="fas fa-user-edit fa-2x d-block mb-2"></i>
+                                        Update Profile
+                                    </a>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <a href="events.php" class="btn quick-action-btn quick-action-green btn-lg w-100">
+                                        <i class="fas fa-calendar fa-2x d-block mb-2"></i>
+                                        Events
+                                    </a>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <a href="jobs.php" class="btn quick-action-btn quick-action-yellow btn-lg w-100">
+                                        <i class="fas fa-briefcase fa-2x d-block mb-2"></i>
+                                        Jobs
+                                    </a>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <a href="communications.php" class="btn quick-action-btn quick-action-teal btn-lg w-100">
+                                        <i class="fas fa-envelope fa-2x d-block mb-2"></i>
+                                        Messages
+                                    </a>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <a href="mentorship.php" class="btn quick-action-btn quick-action-purple btn-lg w-100">
+                                        <i class="fas fa-chalkboard-teacher fa-2x d-block mb-2"></i>
+                                        Mentorship
+                                    </a>
+                                </div>
+
+                            </div>
                         </div>
-
-                        <div class="col-md-3 mb-3">
-                          <a href="events.php" class="btn quick-action-btn quick-action-green btn-lg w-100">
-                            <i class="fas fa-calendar-plus fa-2x d-block mb-2"></i>
-                            Event
-                          </a>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                          <a href="jobs.php" class="btn quick-action-btn quick-action-yellow btn-lg w-100">
-                            <i class="fas fa-briefcase fa-2x d-block mb-2"></i>
-                            Jobs
-                          </a>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                          <a href="mentorship.php" class="btn quick-action-btn quick-action-purple btn-lg w-100">
-                            <i class="fas fa-chalkboard-teacher fa-2x d-block mb-2"></i>
-                            Mentorship
-                          </a>
-                        </div>
-
-                      <?php else: ?>
-                        <!-- ALUMNI: Update Profile, Event, Post Job, Messages, Mentorship -->
-                        <div class="col-md-3 mb-3">
-                          <a href="profile.php?prompt_edit=1" class="btn quick-action-btn quick-action-blue btn-lg w-100">
-                            <i class="fas fa-user-edit fa-2x d-block mb-2"></i>
-                            Update Profile
-                          </a>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                          <a href="events.php" class="btn quick-action-btn quick-action-green btn-lg w-100">
-                            <i class="fas fa-calendar-plus fa-2x d-block mb-2"></i>
-                            Event
-                          </a>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                          <a href="jobs.php" class="btn quick-action-btn quick-action-yellow btn-lg w-100">
-                            <i class="fas fa-briefcase fa-2x d-block mb-2"></i>
-                            Post Job
-                          </a>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                          <a href="communications.php" class="btn quick-action-btn quick-action-teal btn-lg w-100">
-                            <i class="fas fa-envelope fa-2x d-block mb-2"></i>
-                            Messages
-                          </a>
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                          <a href="mentorship.php" class="btn quick-action-btn quick-action-purple btn-lg w-100">
-                            <i class="fas fa-chalkboard-teacher fa-2x d-block mb-2"></i>
-                            Mentorship
-                          </a>
-                        </div>
-                      <?php endif; ?>
-
                     </div>
-                  </div>
                 </div>
-              </div>
             </div>
 
-            <!-- Mentorship Modal (title left as "Mentorship" to match your naming) -->
+            <!-- Mentorship Registration Modal (kept for future use from buttons or page triggers) -->
             <div class="modal fade" id="mentorshipModal" tabindex="-1" aria-labelledby="mentorshipModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="mentorshipModalLabel">Mentorship</h5>
+                            <h5 class="modal-title" id="mentorshipModalLabel">Register for Mentorship</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body mentorship-form">
@@ -405,14 +385,6 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
                                            value="<?php echo htmlspecialchars($user_info['email']); ?>" readonly />
                                 </div>
                                 <div class="mb-3">
-                                    <label for="role" class="form-label">Role</label>
-                                    <select class="form-control" id="role" name="role" required>
-                                        <option value="">Select Role</option>
-                                        <option value="student" <?php echo isset($user_info['batch_year']) && empty($user_info['grad_year']) ? 'selected' : ''; ?>>Student</option>
-                                        <option value="alumni"  <?php echo !empty($user_info['grad_year']) ? 'selected' : ''; ?>>Alumni</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
                                     <label for="session_id" class="form-label">Session</label>
                                     <select class="form-control" id="session_id" name="session_id" required>
                                         <option value="">Select Session</option>
@@ -430,7 +402,7 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
                 </div>
             </div>
 
-            <!-- Hidden popup templates -->
+            <!-- Hidden popup templates (for stat modal) -->
             <div id="tpl-upcoming" class="d-none" data-count="<?php echo count($popup_upcoming); ?>">
                 <?php if (empty($popup_upcoming)): ?>
                     <p class="text-muted mb-0">No upcoming events.</p>
@@ -560,11 +532,15 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
 
 <?php include '../includes/footer.php'; ?>
 
+<!-- Vendor JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Project JS -->
 <script src="../assets/js/custom.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // counter animation
+    // Smooth count-up animation for stat numbers
     document.querySelectorAll('.h5').forEach(counter => {
         const target = parseInt(counter.textContent || '0', 10) || 0;
         let current = 0;
@@ -581,7 +557,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCounter();
     });
 
-    // popup mapping + handlers with color skins
+    // Modal content loader for each stat card
     const map = {
         upcoming:   { title: 'Upcoming Events',     icon: '<i class="fas fa-calendar"></i>',            tpl: 'tpl-upcoming',   skin: 'primary'   },
         my:         { title: 'My Events',           icon: '<i class="fas fa-user-check"></i>',          tpl: 'tpl-my',         skin: 'success'   },
@@ -601,18 +577,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function openPopup(type) {
         const cfg = map[type]; if (!cfg) return;
-
-        // apply skin
         contentEl.classList.remove(...allSkins);
         contentEl.classList.add('modal-skin-' + cfg.skin);
-
-        // fill content
         const tpl = document.getElementById(cfg.tpl);
         const count = parseInt(tpl?.getAttribute('data-count') || '0', 10) || 0;
         titleEl.textContent = cfg.title + (count ? ` (${count})` : '');
         iconEl.innerHTML = cfg.icon;
         bodyEl.innerHTML = tpl ? tpl.innerHTML : '<p class="text-muted mb-0">No data.</p>';
-
         modal.show();
     }
 
