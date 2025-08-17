@@ -1487,25 +1487,22 @@ try {
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Status</th>
-                                    <th>Role</th>
-                                    <th>Phone</th>
-                                    <th>Email</th>
-                                    <th>Registration Status</th>
-                                    <th>Select</th>
-                                </tr>
+                            <tr>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Registration Status</th>
+                            </tr>
                             </thead>
                             <tbody id="sessionParticipantsTableBody">
-                                <!-- Populated dynamically via JavaScript -->
+                            <!-- Populated dynamically via JavaScript -->
                             </tbody>
                         </table>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveSessionRolesBtn">Update Roles</button>
                 </div>
             </div>
         </div>
@@ -1797,69 +1794,38 @@ try {
 
                 // Fetch participants via AJAX
                 fetch('mentorship.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: `action=fetch_session_participants&session_id=${currentSessionId}`
-                    })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `action=fetch_session_participants&session_id=${currentSessionId}`
+                })
                     .then(response => response.json())
                     .then(data => {
                         const tableBody = document.getElementById('sessionParticipantsTableBody');
                         tableBody.innerHTML = '';
                         if (data.length === 0) {
-                            tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No participants found.</td></tr>';
+                            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No participants found.</td></tr>';
                         } else {
                             data.forEach(participant => {
                                 const row = document.createElement('tr');
-                                const roleOptions = ['Attendee', 'Speaker', 'Volunteer']
-                                    .map(role => `<option value="${role}" ${participant.role === role ? 'selected' : ''}>${role}</option>`)
-                                    .join('');
-
                                 row.innerHTML = `
-                        <td>${participant.full_name} (${participant.user_status})</td>
-                        <td>${participant.user_status}</td>
-                        <td>
-                            ${participant.response_status === 'Confirmed' ?
-                                `<select class="form-select form-select-sm" name="roles[]">${roleOptions}</select>` :
-                                participant.role}
-                        </td>
-                        <td>${participant.primary_phone || 'N/A'}</td>
-                        <td>${participant.primary_email || 'N/A'}</td>
-                        <td><span class="badge bg-${participant.response_status === 'Confirmed' ? 'success' : (participant.response_status === 'Pending' ? 'warning' : 'danger')}">${participant.response_status}</span></td>
-                        <td>
-                            ${participant.response_status === 'Confirmed' ?
-                                `<input type="checkbox" name="person_ids[]" value="${participant.person_id}" data-user-status="${participant.user_status}" data-response-status="${participant.response_status}">` :
-                                ''}
-                        </td>
-                    `;
+                            <td>${participant.full_name} (${participant.user_status})</td>
+                            <td>${participant.user_status}</td>
+                            <td>${participant.primary_phone || 'N/A'}</td>
+                            <td>${participant.primary_email || 'N/A'}</td>
+                            <td><span class="badge bg-${participant.response_status === 'Confirmed' ? 'success' : (participant.response_status === 'Pending' ? 'warning' : 'danger')}">${participant.response_status}</span></td>
+                        `;
                                 tableBody.appendChild(row);
                             });
                         }
                     })
-                    .then(() => {
-                        // Enable/disable Save Roles button based on checkbox state
-                        const checkboxes = document.querySelectorAll('#sessionParticipantsTableBody input[name="person_ids[]"]');
-                        const saveRolesBtn = document.getElementById('saveSessionRolesBtn');
-
-                        const updateButtonState = () => {
-                            const checked = document.querySelectorAll('#sessionParticipantsTableBody input[name="person_ids[]"]:checked').length > 0;
-                            saveRolesBtn.disabled = !checked;
-                        };
-
-                        checkboxes.forEach(checkbox => {
-                            checkbox.addEventListener('change', updateButtonState);
-                        });
-
-                        updateButtonState();
-                    })
                     .catch(error => {
                         console.error('Error fetching participants:', error);
-                        document.getElementById('sessionParticipantsTableBody').innerHTML = '<tr><td colspan="7" class="text-center">Error loading participants.</td></tr>';
+                        document.getElementById('sessionParticipantsTableBody').innerHTML = '<tr><td colspan="5" class="text-center">Error loading participants.</td></tr>';
                     });
             });
         }
-
 
         // Populate view all feedback modal
         const viewAllSessionFeedbackModal = document.getElementById('viewAllSessionFeedbackModal');
