@@ -996,19 +996,8 @@ if ($user_info) {
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">City</label>
-                                    <select class="form-select" id="city" name="city" required>
-                                        <option value="">Select City</option>
-                                        <option value="Dhaka">Dhaka</option>
-                                        <option value="Chattogram">Chattogram</option>
-                                        <option value="Khulna">Khulna</option>
-                                        <option value="Rajshahi">Rajshahi</option>
-                                        <option value="Sylhet">Sylhet</option>
-                                        <option value="Barishal">Barishal</option>
-                                        <option value="Rangpur">Rangpur</option>
-                                        <option value="Mymensingh">Mymensingh</option>
-                                        <option value="Jessore">Jessore</option>
-                                        <option value="Bogura">Bogura</option>
-                                    </select>
+                                    <input type="text" class="form-control readonly-field"
+                                           value="<?php echo htmlspecialchars($user_info['city'] ?? 'N/A'); ?>" readonly>
                                 </div>
                             </div>
                             <div class="row">
