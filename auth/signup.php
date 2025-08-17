@@ -261,113 +261,113 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
     </nav>
 
-    <div class="signup-section" data-aos="fade-up">
-        <h2>Sign Up</h2>
-        <?php if (!empty($error)) echo "<div class='error'>$error</div>"; ?>
-        <?php if (!empty($success)) echo "<div class='success'>$success</div>"; ?>
-        <form method="POST" action="signup.php">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="first_name" class="form-label">First Name</label>
-                    <input type="text" name="first_name" class="form-control" id="first_name" required />
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="last_name" class="form-label">Last Name</label>
-                    <input type="text" name="last_name" class="form-control" id="last_name" required />
-                </div>
+<div class="signup-section" data-aos="fade-up">
+    <h2>Sign Up</h2>
+    <?php if (!empty($error)) echo "<div class='error'>$error</div>"; ?>
+    <?php if (!empty($success)) echo "<div class='success'>$success</div>"; ?>
+    <form method="POST" action="signup.php">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="first_name" class="form-label">First Name</label>
+                <input type="text" name="first_name" class="form-control" id="first_name" required />
             </div>
-            <div class="mb-3">
-                <label for="student_id" class="form-label">Student ID</label>
-                <input type="text" name="student_id" class="form-control" id="student_id" required />
+            <div class="col-md-6 mb-3">
+                <label for="last_name" class="form-label">Last Name</label>
+                <input type="text" name="last_name" class="form-control" id="last_name" required />
             </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" name="email" class="form-control" id="email" required />
-            </div>
-            <div class="mb-3">
-                <label for="phone" class="form-label">Phone</label>
-                <input type="text" name="phone" class="form-control" id="phone" required />
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Create Password</label>
-                <input type="password" name="password" class="form-control" id="password" placeholder="Password must be at least 8 characters long." required />
-            </div>
-            <div class="mb-3">
-                <label for="confirm_password" class="form-label">Confirm Password</label>
-                <input type="password" name="confirm_password" class="form-control" id="confirm_password" required />
-            </div>
-            <div class="mb-3">
-                <label for="gender" class="form-label">Gender</label>
-                <select name="gender" class="form-control" id="gender" required>
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="date_of_birth" class="form-label">Date of Birth</label>
-                <input type="date" name="date_of_birth" class="form-control" id="date_of_birth" required />
-            </div>
-            <div class="mb-3">
-                <label for="department" class="form-label">Department</label>
-                <select name="department" class="form-control" id="department" required>
-                    <option value="">Select Department</option>
-                    <option value="Bachelor of Architecture">Bachelor of Architecture</option>
-                    <option value="BS in Civil & Environmental Engineering (CEE)">BS in Civil & Environmental Engineering (CEE)</option>
-                    <option value="BS in Computer Science & Engineering (CSE)">BS in Computer Science & Engineering (CSE)</option>
-                    <option value="BS in Electrical & Electronic Engineering (EEE)">BS in Electrical & Electronic Engineering (EEE)</option>
-                    <option value="BS in Electronic & Telecom Engineering (ETE)">BS in Electronic & Telecom Engineering (ETE)</option>
-                    <option value="BS in Biochemistry and Biotechnology">BS in Biochemistry and Biotechnology</option>
-                    <option value="BS in Environmental Science & Management">BS in Environmental Science & Management</option>
-                    <option value="BS in Microbiology">BS in Microbiology</option>
-                    <option value="BPharm Professional">BPharm Professional</option>
-                    <option value="BBA Major in Accounting">BBA Major in Accounting</option>
-                    <option value="BBA Major in Economics">BBA Major in Economics</option>
-                    <option value="BBA Major in Entrepreneurship">BBA Major in Entrepreneurship</option>
-                    <option value="BBA Major in Finance">BBA Major in Finance</option>
-                    <option value="BBA Major in Human Resource Management">BBA Major in Human Resource Management</option>
-                    <option value="BBA Major in International Business">BBA Major in International Business</option>
-                    <option value="BBA Major in Management">BBA Major in Management</option>
-                    <option value="BBA Major in Management Information Systems">BBA Major in Management Information Systems</option>
-                    <option value="BBA Major in Marketing">BBA Major in Marketing</option>
-                    <option value="BBA Major in Supply Chain Management">BBA Major in Supply Chain Management</option>
-                    <option value="BBA General">BBA General</option>
-                    <option value="BS in Economics">BS in Economics</option>
-                    <option value="BA in English">BA in English</option>
-                    <option value="Bachelor of Laws (LLB Hons)">Bachelor of Laws (LLB Hons)</option>
-                    <option value="BSS in Media and Journalism (MAJ)">BSS in Media and Journalism (MAJ)</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="street" class="form-label">Street</label>
-                <input type="text" name="street" class="form-control" id="street" required />
-            </div>
-            <div class="mb-3">
-                <label for="city" class="form-label">City</label>
-                <input type="text" name="city" class="form-control" id="city" required />
-            </div>
-            <div class="mb-3">
-                <label for="zip" class="form-label">Zip Code</label>
-                <input type="text" name="zip" class="form-control" id="zip" required />
-            </div>
-            <div class="mb-3">
-                <label for="user_type" class="form-label">User Type</label>
-                <select name="user_type" class="form-control" id="user_type" required>
-                    <option value="">Select User Type</option>
-                    <option value="alumni">Alumni</option>
-                    <option value="student">Student</option>
-                </select>
-            </div>
-            <div class="mb-3" id="grad_batch_year_field">
-                <label for="grad_batch_year" class="form-label">Graduation/Batch Year</label>
-                <input type="text" name="grad_batch_year" class="form-control" id="grad_batch_year" />
-                <input type="text" name="batch_year" class="form-control" id="batch_year" style="display:none;" />
-            </div>
-            <button type="submit" class="btn btn-primary">Register</button>
-        </form>
-        <p class="text-center mt-3">Already have an account? <a href="signin.php" class="signup-link">Sign In</a></p>
-    </div>
+        </div>
+        <div class="mb-3">
+            <label for="student_id" class="form-label">Student ID</label>
+            <input type="text" name="student_id" class="form-control" id="student_id" required />
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" id="email" required />
+        </div>
+        <div class="mb-3">
+            <label for="phone" class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control" id="phone" required />
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Create Password</label>
+            <input type="password" name="password" class="form-control" id="password" placeholder="Password must be at least 8 characters long." required />
+        </div>
+        <div class="mb-3">
+            <label for="confirm_password" class="form-label">Confirm Password</label>
+            <input type="password" name="confirm_password" class="form-control" id="confirm_password" required />
+        </div>
+        <div class="mb-3">
+            <label for="gender" class="form-label">Gender</label>
+            <select name="gender" class="form-control" id="gender" required>
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="date_of_birth" class="form-label">Date of Birth</label>
+            <input type="date" name="date_of_birth" class="form-control" id="date_of_birth" required />
+        </div>
+        <div class="mb-3">
+            <label for="department" class="form-label">Department</label>
+            <select name="department" class="form-control" id="department" required>
+                <option value="">Select Department</option>
+                <option value="Bachelor of Architecture">Bachelor of Architecture</option>
+                <option value="BS in Civil & Environmental Engineering (CEE)">BS in Civil & Environmental Engineering (CEE)</option>
+                <option value="BS in Computer Science & Engineering (CSE)">BS in Computer Science & Engineering (CSE)</option>
+                <option value="BS in Electrical & Electronic Engineering (EEE)">BS in Electrical & Electronic Engineering (EEE)</option>
+                <option value="BS in Electronic & Telecom Engineering (ETE)">BS in Electronic & Telecom Engineering (ETE)</option>
+                <option value="BS in Biochemistry and Biotechnology">BS in Biochemistry and Biotechnology</option>
+                <option value="BS in Environmental Science & Management">BS in Environmental Science & Management</option>
+                <option value="BS in Microbiology">BS in Microbiology</option>
+                <option value="BPharm Professional">BPharm Professional</option>
+                <option value="BBA Major in Accounting">BBA Major in Accounting</option>
+                <option value="BBA Major in Economics">BBA Major in Economics</option>
+                <option value="BBA Major in Entrepreneurship">BBA Major in Entrepreneurship</option>
+                <option value="BBA Major in Finance">BBA Major in Finance</option>
+                <option value="BBA Major in Human Resource Management">BBA Major in Human Resource Management</option>
+                <option value="BBA Major in International Business">BBA Major in International Business</option>
+                <option value="BBA Major in Management">BBA Major in Management</option>
+                <option value="BBA Major in Management Information Systems">BBA Major in Management Information Systems</option>
+                <option value="BBA Major in Marketing">BBA Major in Marketing</option>
+                <option value="BBA Major in Supply Chain Management">BBA Major in Supply Chain Management</option>
+                <option value="BBA General">BBA General</option>
+                <option value="BS in Economics">BS in Economics</option>
+                <option value="BA in English">BA in English</option>
+                <option value="Bachelor of Laws (LLB Hons)">Bachelor of Laws (LLB Hons)</option>
+                <option value="BSS in Media and Journalism (MAJ)">BSS in Media and Journalism (MAJ)</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="street" class="form-label">Street</label>
+            <input type="text" name="street" class="form-control" id="street" required />
+        </div>
+        <div class="mb-3">
+            <label for="city" class="form-label">City</label>
+            <input type="text" name="city" class="form-control" id="city" required />
+        </div>
+        <div class="mb-3">
+            <label for="zip" class="form-label">Zip Code</label>
+            <input type="text" name="zip" class="form-control" id="zip" required />
+        </div>
+        <div class="mb-3">
+            <label for="user_type" class="form-label">User Type</label>
+            <select name="user_type" class="form-control" id="user_type" required>
+                <option value="">Select User Type</option>
+                <option value="alumni">Alumni</option>
+                <option value="student">Student</option>
+            </select>
+        </div>
+        <div class="mb-3" id="grad_batch_year_field">
+            <label for="grad_batch_year" class="form-label">Graduation/Batch Year</label>
+            <input type="text" name="grad_batch_year" class="form-control" id="grad_batch_year" />
+            <input type="text" name="batch_year" class="form-control" id="batch_year" style="display:none;" />
+        </div>
+        <button type="submit" class="btn btn-primary">Register</button>
+    </form>
+    <p class="text-center mt-3">Already have an account? <a href="signin.php" class="signup-link">Sign In</a></p>
+</div>
 
     <footer class="footer">
         <div class="container">
