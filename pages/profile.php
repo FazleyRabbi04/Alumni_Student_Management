@@ -1374,38 +1374,11 @@ if ($user_info) {
                         <input type="hidden" name="action" value="add_education">
                         <div class="mb-3">
                             <label for="degree" class="form-label">Degree *</label>
-                            <select name="degree" class="form-control" id="degree" required>
-                                <option value="">Select Degree</option>
-                                <option value="Bachelor of Architecture">Bachelor of Architecture</option>
-                                <option value="BS in Civil & Environmental Engineering (CEE)">BS in Civil & Environmental Engineering (CEE)</option>
-                                <option value="BS in Computer Science & Engineering (CSE)">BS in Computer Science & Engineering (CSE)</option>
-                                <option value="BS in Electrical & Electronic Engineering (EEE)">BS in Electrical & Electronic Engineering (EEE)</option>
-                                <option value="BS in Electronic & Telecom Engineering (ETE)">BS in Electronic & Telecom Engineering (ETE)</option>
-                                <option value="BS in Biochemistry and Biotechnology">BS in Biochemistry and Biotechnology</option>
-                                <option value="BS in Environmental Science & Management">BS in Environmental Science & Management</option>
-                                <option value="BS in Microbiology">BS in Microbiology</option>
-                                <option value="BPharm Professional">BPharm Professional</option>
-                                <option value="BBA Major in Accounting">BBA Major in Accounting</option>
-                                <option value="BBA Major in Economics">BBA Major in Economics</option>
-                                <option value="BBA Major in Entrepreneurship">BBA Major in Entrepreneurship</option>
-                                <option value="BBA Major in Finance">BBA Major in Finance</option>
-                                <option value="BBA Major in Human Resource Management">BBA Major in Human Resource Management</option>
-                                <option value="BBA Major in International Business">BBA Major in International Business</option>
-                                <option value="BBA Major in Management">BBA Major in Management</option>
-                                <option value="BBA Major in Management Information Systems">BBA Major in Management Information Systems</option>
-                                <option value="BBA Major in Marketing">BBA Major in Marketing</option>
-                                <option value="BBA Major in Supply Chain Management">BBA Major in Supply Chain Management</option>
-                                <option value="BBA General">BBA General</option>
-                                <option value="BS in Economics">BS in Economics</option>
-                                <option value="BA in English">BA in English</option>
-                                <option value="Bachelor of Laws (LLB Hons)">Bachelor of Laws (LLB Hons)</option>
-                                <option value="BSS in Media and Journalism (MAJ)">BSS in Media and Journalism (MAJ)</option>
-                            </select>
+                            <input type="text" class="form-control" id="degree" name="degree" required>
                         </div>
                         <div class="mb-3">
                             <label for="institution" class="form-label">Institution *</label>
-                            <input type="text" class="form-control" id="institution" name="institution" required
-                                placeholder="e.g., ABC University">
+                            <input type="text" class="form-control" id="institution" name="institution" required>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
