@@ -202,14 +202,25 @@ $popup_mentorship = $popup_mentorship_stmt ? $popup_mentorship_stmt->fetchAll(PD
             </div>
 
             <!-- Welcome Message -->
-            <div class="alert alert-info alert-dismissible fade show text-center" role="alert">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong>Welcome back, <?php echo htmlspecialchars($user_info['first_name']); ?>!</strong>
-                You have <?php echo (int)$stats['unread_messages']; ?> unread messages,
-                <?php echo (int)$stats['my_events']; ?> upcoming events, and
-                <?php echo (int)$stats['mentorship_sessions']; ?> mentorship sessions.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+<div class="alert alert-info alert-dismissible fade show text-center" role="alert">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Welcome back, <?php echo htmlspecialchars($user_info['first_name']); ?>!</strong>
+    You have <?php echo (int)$stats['unread_messages']; ?> unread messages,
+    <?php echo (int)$stats['my_events']; ?> upcoming events, and
+    <?php echo (int)$stats['mentorship_sessions']; ?> mentorship sessions.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<!-- Profile Completion Reminder -->
+<?php if (empty($user_info['email']) || empty($user_info['phone']) || empty($user_info['address'])): ?>
+    <div class="alert alert-warning alert-dismissible fade show text-center" role="alert">
+        <i class="fas fa-user-edit me-2"></i>
+        <strong>Complete your profile!</strong> Some details are missing. 
+        <a href="profile.php?prompt_edit=1" class="alert-link">Click here to update your profile</a>.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
 
             <!-- Flash Messages -->
             <?php if (isset($_SESSION['success'])): ?>
