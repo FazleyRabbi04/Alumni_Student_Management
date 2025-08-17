@@ -2,7 +2,7 @@
 require_once '../config/database.php';
 startSecureSession();
 
-// Require user to be logged in edit
+// Require user to be logged in edits
 requireLogin();
 
 $user_id = $_SESSION['user_id'];
