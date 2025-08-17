@@ -252,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
         <div class="mb-3">
             <label for="email" class="form-label">Email</label>
-            <input type="email" name="email" class="form-control" id="email" placeholder="user@abc.edu" required />
+            <input type="email" name="email" class="form-control" id="email" required />
         </div>
         <div class="mb-3">
             <label for="phone" class="form-label">Phone</label>
