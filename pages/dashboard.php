@@ -43,9 +43,9 @@ $stats['unread_messages'] = $comm_stmt ? (int)($comm_stmt->fetch()['total'] ?? 0
 // Upcoming mentorship sessions the user is registered for
 $mentorship_stmt  = executeQuery(
     "SELECT COUNT(*) AS total
-     FROM mentorship_sessions ms
-     JOIN registers r ON ms.id = r.event_id
-     WHERE r.person_id = ? AND ms.date >= CURDATE()",
+     FROM session s
+     JOIN conducts c ON s.session_id = c.session_id
+     WHERE c.person_id = ? AND s.session_date >= CURDATE() AND c.response_status != 'Cancelled'",
     [$user_id]
 );
 $stats['mentorship_sessions'] = $mentorship_stmt ? (int)($mentorship_stmt->fetch()['total'] ?? 0) : 0;
@@ -103,11 +103,11 @@ $popup_unread_stmt = executeQuery(
 $popup_unread = $popup_unread_stmt ? $popup_unread_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
 $popup_mentorship_stmt = executeQuery(
-    "SELECT ms.title, ms.date, ms.location, r.status
-     FROM mentorship_sessions ms
-     JOIN registers r ON r.event_id = ms.id
-     WHERE r.person_id = ? AND ms.date >= CURDATE()
-     ORDER BY ms.date ASC
+    "SELECT s.session_title as title, s.session_date as date, CONCAT(s.venue, ', ', s.city) as location, c.response_status as status
+     FROM session s
+     JOIN conducts c ON s.session_id = c.session_id
+     WHERE c.person_id = ? AND s.session_date >= CURDATE() AND c.response_status != 'Cancelled'
+     ORDER BY s.session_date ASC
      LIMIT 10",
     [$user_id]
 );

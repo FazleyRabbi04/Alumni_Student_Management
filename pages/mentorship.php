@@ -1244,7 +1244,7 @@ try {
                         <input type="hidden" name="action" value="add_session">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            You will automatically become the organizer of this event.
+                            You will automatically become the organizer of this session.
                         </div>
 
                         <div class="mb-3">
@@ -1293,6 +1293,7 @@ try {
                         <div class="mb-3">
                             <label for="mode" class="form-label">Mode</label>
                             <select class="form-select" id="mode" name="mode" required>
+                                <option value=" ">Select Mode</option>
                                 <option value="Online">Online</option>
                                 <option value="Offline">Offline</option>
                                 <option value="Hybrid">Hybrid</option>
