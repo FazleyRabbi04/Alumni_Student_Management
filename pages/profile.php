@@ -902,7 +902,6 @@ if ($user_info) {
                                             <option value="Jessore">Jessore</option>
                                             <option value="Bogura">Bogura</option>
                                         </select>
-                                            value="<?php echo htmlspecialchars($user_info['city'] ?? ''); ?>">
                                     </div>
                                 </div>
 
@@ -1010,7 +1009,6 @@ if ($user_info) {
                                         <option value="Jessore">Jessore</option>
                                         <option value="Bogura">Bogura</option>
                                     </select>
-                                        value="<?php echo htmlspecialchars($user_info['city'] ?? 'N/A'); ?>" readonly>
                                 </div>
                             </div>
                             <div class="row">
@@ -1384,8 +1382,8 @@ if ($user_info) {
                             <input type="hidden" name="action" value="add_education">
                             <div class="mb-3">
                                 <label for="degree" class="form-label">Degree *</label>
-                                <select name="department" class="form-control" id="department" required>
-                                    <option value="">Select Department</option>
+                                <select name="degree" class="form-control" id="degree" required>
+                                    <option value="">Select Degree</option>
                                     <option value="Bachelor of Architecture">Bachelor of Architecture</option>
                                     <option value="BS in Civil & Environmental Engineering (CEE)">BS in Civil & Environmental Engineering (CEE)</option>
                                     <option value="BS in Computer Science & Engineering (CSE)">BS in Computer Science & Engineering (CSE)</option>
