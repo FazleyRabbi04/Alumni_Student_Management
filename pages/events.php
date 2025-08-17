@@ -12,7 +12,8 @@ $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $events_per_page = 6;
 
 // Function to check if user is an alumnus
-function isAlumni($user_id) {
+function isAlumni($user_id)
+{
     $query = "SELECT COUNT(*) FROM alumni WHERE person_id = ?";
     $stmt = executeQuery($query, [$user_id]);
     if ($stmt === false) {
@@ -23,7 +24,8 @@ function isAlumni($user_id) {
 }
 
 // Function to check if user is a student
-function isStudent($user_id) {
+function isStudent($user_id)
+{
     $query = "SELECT COUNT(*) FROM student WHERE person_id = ?";
     $stmt = executeQuery($query, [$user_id]);
     if ($stmt === false) {
@@ -34,7 +36,8 @@ function isStudent($user_id) {
 }
 
 // Function to check if user is an organizer for an event
-function isOrganizer($user_id, $event_id) {
+function isOrganizer($user_id, $event_id)
+{
     $query = "SELECT COUNT(*) FROM registers WHERE person_id = ? AND event_id = ? AND role = 'Organizer'";
     $stmt = executeQuery($query, [$user_id, $event_id]);
     if ($stmt === false) {
@@ -45,28 +48,32 @@ function isOrganizer($user_id, $event_id) {
 }
 
 // Function to get total confirmed participants for an event
-function getTotalParticipants($event_id) {
+function getTotalParticipants($event_id)
+{
     $query = "SELECT COUNT(*) FROM registers WHERE event_id = ? AND response_status = 'Confirmed'";
     $stmt = executeQuery($query, [$event_id]);
     return $stmt ? $stmt->fetchColumn() : 0;
 }
 
 // Function to check if event has an organizer
-function eventHasOrganizer($event_id) {
+function eventHasOrganizer($event_id)
+{
     $query = "SELECT COUNT(*) FROM registers WHERE event_id = ? AND role = 'Organizer' AND response_status = 'Confirmed'";
     $stmt = executeQuery($query, [$event_id]);
     return $stmt ? $stmt->fetchColumn() > 0 : false;
 }
 
 // Function to get user's registration status for an event
-function getUserRegistrationStatus($user_id, $event_id) {
+function getUserRegistrationStatus($user_id, $event_id)
+{
     $query = "SELECT response_status, role FROM registers WHERE person_id = ? AND event_id = ?";
     $stmt = executeQuery($query, [$user_id, $event_id]);
     return $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
 }
 
 // Function to check if event is completed (past event date)
-function isEventCompleted($event_date) {
+function isEventCompleted($event_date)
+{
     $current_date = new DateTime('2025-08-16');
     $event_datetime = new DateTime($event_date);
     return $event_datetime < $current_date;
@@ -652,6 +659,7 @@ foreach ($events as $event) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -683,24 +691,30 @@ foreach ($events as $event) {
             background-color: #f5f7fa;
             color: #002147;
         }
+
         .bg-navy {
             background-color: #002147;
         }
+
         .text-navy {
             color: #002147;
         }
+
         .navbar-brand {
             font-weight: 700;
             font-size: 1.5rem;
             letter-spacing: 0.5px;
         }
+
         .nav-link {
             font-weight: 500;
             transition: color 0.3s ease;
         }
+
         .nav-link:hover {
             color: #aad4ff !important;
         }
+
         .hero {
             background: linear-gradient(to right, #002147, #0077c8);
             color: #fff;
@@ -708,16 +722,19 @@ foreach ($events as $event) {
             text-align: center;
             position: relative;
         }
+
         .hero h1 {
             font-weight: 700;
             font-size: 2.75rem;
         }
+
         h2.section-title {
             font-weight: 700;
             font-family: 'Roboto', sans-serif;
             font-size: 2rem;
             margin-bottom: 2rem;
         }
+
         .event-card {
             border: 1px solid #e2e8f0;
             border-radius: 12px;
@@ -727,101 +744,141 @@ foreach ($events as $event) {
             height: 100%;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         }
+
         .event-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
         }
+
         .filter-form {
             margin-bottom: 2rem;
         }
+
         .pagination .page-link {
             border-radius: 8px;
             margin: 0 3px;
             color: #002147;
         }
+
         .pagination .page-item.active .page-link {
             background-color: #002147;
             border-color: #002147;
         }
+
         .modal-content {
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
+
         .btn-primary {
             background-color: #002147;
             border-color: #002147;
             border-radius: 8px;
             padding: 10px 20px;
         }
+
         .btn-primary:hover {
             background-color: #0077c8;
             border-color: #0077c8;
         }
+
         .event-form {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
+
         .modal-header.bg-navy {
             background-color: #002147;
             color: #fff;
         }
+
         .modal-header.bg-success {
             background-color: #28a745;
             color: #fff;
         }
+
         .modal-title {
             font-family: 'Roboto', sans-serif;
             font-weight: 700;
         }
+
         .form-label {
             font-weight: 600;
             color: #002147;
         }
-        .form-control, .form-select {
+
+        .form-control,
+        .form-select {
             border-radius: 8px;
             border: 1px solid #ced4da;
             padding: 10px;
             font-size: 1rem;
         }
-        .form-control:focus, .form-select:focus {
+
+        .form-control:focus,
+        .form-select:focus {
             border-color: #002147;
             box-shadow: 0 0 0 0.2rem rgba(0, 33, 71, 0.25);
         }
+
         .nav-tabs .nav-link {
             color: #002147;
             font-weight: 600;
         }
+
         .nav-tabs .nav-link.active {
             color: #002147;
             border-bottom: 2px solid #002147;
         }
+
         .nav-tabs .nav-link:hover {
             color: #002147;
         }
+
         .table-responsive {
             max-height: 400px;
         }
+
         .form-select-sm {
             padding: 5px;
             font-size: 0.875rem;
         }
-        .badge-organizer { background-color: #dc3545; }
-        .badge-speaker { background-color: #28a745; }
-        .badge-volunteer { background-color: #17a2b8; }
-        .badge-sponsor { background-color: #ffc107; color: #212529; }
-        .badge-attendee { background-color: #6c757d; }
+
+        .badge-organizer {
+            background-color: #dc3545;
+        }
+
+        .badge-speaker {
+            background-color: #28a745;
+        }
+
+        .badge-volunteer {
+            background-color: #17a2b8;
+        }
+
+        .badge-sponsor {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .badge-attendee {
+            background-color: #6c757d;
+        }
+
         .feedback-section {
             background-color: #f8f9fa;
             border-radius: 8px;
             padding: 15px;
             margin-top: 15px;
         }
+
         .feedback-text {
             font-style: italic;
             color: #6c757d;
             font-size: 0.9rem;
         }
+
         .feedback-card {
             border-left: 4px solid #007bff;
             background-color: #f8f9fa;
@@ -867,7 +924,7 @@ foreach ($events as $event) {
                 align-items: flex-start !important;
             }
 
-            .feedback-card .card-header > div:last-child {
+            .feedback-card .card-header>div:last-child {
                 margin-top: 0.5rem;
             }
         }
@@ -876,6 +933,7 @@ foreach ($events as $event) {
             .filter-form .input-group {
                 flex-direction: column;
             }
+
             .filter-form .form-control,
             .filter-form .form-select {
                 width: 100%;
@@ -884,153 +942,116 @@ foreach ($events as $event) {
         }
     </style>
 </head>
+
 <body>
 
-<?php include '../includes/navbar.php'; ?>
+    <?php include '../includes/navbar.php'; ?>
 
-<!-- Hero Section -->
-<section class="hero" data-aos="fade-up">
-    <div class="container">
-        <h1 class="display-4">Events</h1>
-        <?php if (isLoggedIn() && isAlumni($_SESSION['user_id'])): ?>
-            <button class="btn btn-light mt-3" data-bs-toggle="modal" data-bs-target="#addEventModal">
-                <i class="fas fa-plus me-2"></i>Register Event
-            </button>
-        <?php endif; ?>
-    </div>
-</section>
+    <!-- Hero Section -->
+    <section class="hero" data-aos="fade-up">
+        <div class="container">
+            <h1 class="display-4">Events</h1>
+            <?php if (isLoggedIn() && isAlumni($_SESSION['user_id'])): ?>
+                <button class="btn btn-light mt-3" data-bs-toggle="modal" data-bs-target="#addEventModal">
+                    <i class="fas fa-plus me-2"></i>Register Event
+                </button>
+            <?php endif; ?>
+        </div>
+    </section>
 
-<!-- Filter and Search Section -->
-<section class="py-4">
-    <div class="container">
-        <form class="filter-form" method="GET">
-            <div class="input-group input-group-lg">
-                <input type="text" name="search" class="form-control rounded-start" placeholder="Search by title, city, or venue" value="<?php echo htmlspecialchars($search); ?>">
-                <select name="event_type" class="form-select">
-                    <option value="">All Event Types</option>
-                    <?php foreach ($event_types as $type): ?>
-                        <option value="<?php echo htmlspecialchars($type); ?>" <?php echo $event_type === $type ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($type); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="submit" class="btn btn-primary">Filter</button>
-            </div>
-        </form>
-    </div>
-</section>
+    <!-- Filter and Search Section -->
+    <section class="py-4">
+        <div class="container">
+            <form class="filter-form" method="GET">
+                <div class="input-group input-group-lg">
+                    <input type="text" name="search" class="form-control rounded-start" placeholder="Search by title, city, or venue" value="<?php echo htmlspecialchars($search); ?>">
+                    <select name="event_type" class="form-select">
+                        <option value="">All Event Types</option>
+                        <?php foreach ($event_types as $type): ?>
+                            <option value="<?php echo htmlspecialchars($type); ?>" <?php echo $event_type === $type ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($type); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                </div>
+            </form>
+        </div>
+    </section>
 
-<!-- Events Section -->
-<section class="py-5">
-    <div class="container">
-        <?php if ($success_message): ?>
-            <div class="alert alert-success text-center rounded-3" data-aos="fade-up"><?php echo htmlspecialchars($success_message); ?></div>
-        <?php endif; ?>
-        <?php if ($error_message): ?>
-            <div class="alert alert-danger text-center rounded-3" data-aos="fade-up"><?php echo htmlspecialchars($error_message); ?></div>
-        <?php endif; ?>
+    <!-- Events Section -->
+    <section class="py-5">
+        <div class="container">
+            <?php if ($success_message): ?>
+                <div class="alert alert-success text-center rounded-3" data-aos="fade-up"><?php echo htmlspecialchars($success_message); ?></div>
+            <?php endif; ?>
+            <?php if ($error_message): ?>
+                <div class="alert alert-danger text-center rounded-3" data-aos="fade-up"><?php echo htmlspecialchars($error_message); ?></div>
+            <?php endif; ?>
 
-        <ul class="nav nav-tabs mb-4" id="eventTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab" style="color: #002147 !important;">Upcoming Events</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" style="color: #002147 !important;">Past Events</button>
-            </li>
-        </ul>
+            <ul class="nav nav-tabs mb-4" id="eventTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab" style="color: #002147 !important;">Upcoming Events</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab" style="color: #002147 !important;">Past Events</button>
+                </li>
+            </ul>
 
-        <div class="tab-content" id="eventTabContent">
-            <!-- Upcoming Events Tab -->
-            <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
-                <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
-                    <?php if (empty($upcomingEvents)): ?>
-                        <div class="col-12 text-center py-5">
-                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                            <p class="text-muted"><?php echo empty($error_message) ? 'No upcoming events found.' : ''; ?></p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($upcomingEvents as $event): ?>
-                            <div class="col-md-6 col-lg-4">
-                                <div class="event-card">
-                                    <h5><?php echo htmlspecialchars($event['event_title']); ?></h5>
-                                    <p><i class="fas fa-calendar me-2"></i><?php echo date('F j, Y', strtotime($event['event_date'])); ?></p>
-                                    <p><i class="fas fa-clock me-2"></i><?php echo htmlspecialchars($event['start_time']) . ' - ' . htmlspecialchars($event['end_time']); ?></p>
-                                    <p><i class="fas fa-map-marker-alt me-2"></i><?php echo htmlspecialchars($event['venue'] . ', ' . $event['city']); ?></p>
-                                    <p><i class="fas fa-tag me-2"></i><?php echo htmlspecialchars($event['type']); ?></p>
+            <div class="tab-content" id="eventTabContent">
+                <!-- Upcoming Events Tab -->
+                <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
+                    <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+                        <?php if (empty($upcomingEvents)): ?>
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                                <p class="text-muted"><?php echo empty($error_message) ? 'No upcoming events found.' : ''; ?></p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($upcomingEvents as $event): ?>
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="event-card">
+                                        <h5><?php echo htmlspecialchars($event['event_title']); ?></h5>
+                                        <p><i class="fas fa-calendar me-2"></i><?php echo date('F j, Y', strtotime($event['event_date'])); ?></p>
+                                        <p><i class="fas fa-clock me-2"></i><?php echo htmlspecialchars($event['start_time']) . ' - ' . htmlspecialchars($event['end_time']); ?></p>
+                                        <p><i class="fas fa-map-marker-alt me-2"></i><?php echo htmlspecialchars($event['venue'] . ', ' . $event['city']); ?></p>
+                                        <p><i class="fas fa-tag me-2"></i><?php echo htmlspecialchars($event['type']); ?></p>
 
-                                    <?php if (!eventHasOrganizer($event['event_id'])): ?>
-                                        <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>No organizer assigned</p>
-                                    <?php endif; ?>
+                                        <?php if (!eventHasOrganizer($event['event_id'])): ?>
+                                            <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>No organizer assigned</p>
+                                        <?php endif; ?>
 
-                                    <?php if (isLoggedIn() && isset($user_registrations[$event['event_id']])): ?>
-                                        <p><strong>Status:</strong>
-                                            <span class="badge bg-<?php echo $user_registrations[$event['event_id']]['response_status'] == 'Confirmed' ? 'success' : ($user_registrations[$event['event_id']]['response_status'] == 'Pending' ? 'warning' : 'danger'); ?>">
-                                                <?php echo htmlspecialchars($user_registrations[$event['event_id']]['response_status']); ?>
-                                            </span>
-                                        </p>
-                                        <p><strong>Role:</strong>
-                                            <span class="badge badge-<?php echo strtolower($user_registrations[$event['event_id']]['role']); ?>">
-                                                <?php echo htmlspecialchars($user_registrations[$event['event_id']]['role']); ?>
-                                            </span>
-                                        </p>
-                                    <?php endif; ?>
+                                        <?php if (isLoggedIn() && isset($user_registrations[$event['event_id']])): ?>
+                                            <p><strong>Status:</strong>
+                                                <span class="badge bg-<?php echo $user_registrations[$event['event_id']]['response_status'] == 'Confirmed' ? 'success' : ($user_registrations[$event['event_id']]['response_status'] == 'Pending' ? 'warning' : 'danger'); ?>">
+                                                    <?php echo htmlspecialchars($user_registrations[$event['event_id']]['response_status']); ?>
+                                                </span>
+                                            </p>
+                                            <p><strong>Role:</strong>
+                                                <span class="badge badge-<?php echo strtolower($user_registrations[$event['event_id']]['role']); ?>">
+                                                    <?php echo htmlspecialchars($user_registrations[$event['event_id']]['role']); ?>
+                                                </span>
+                                            </p>
+                                        <?php endif; ?>
 
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <?php if (isLoggedIn()): ?>
-                                            <?php if (isOrganizer($_SESSION['user_id'], $event['event_id'])): ?>
-                                                <!-- Organizer buttons -->
-                                                <?php if (!isEventCompleted($event['event_date'])): ?>
-                                                    <!-- Upcoming event organizer buttons -->
-                                                    <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEventModal" data-event-id="<?php echo $event['event_id']; ?>" data-title="<?php echo htmlspecialchars($event['event_title']); ?>" data-date="<?php echo $event['event_date']; ?>" data-city="<?php echo htmlspecialchars($event['city']); ?>" data-venue="<?php echo htmlspecialchars($event['venue']); ?>" data-type="<?php echo htmlspecialchars($event['type']); ?>" data-start-time="<?php echo htmlspecialchars($event['start_time']); ?>" data-end-time="<?php echo htmlspecialchars($event['end_time']); ?>">Edit</button>
-                                                    <form method="POST" style="display:inline;">
-                                                        <input type="hidden" name="action" value="delete_event">
-                                                        <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this event?');">Delete</button>
-                                                    </form>
-                                                <?php endif; ?>
-                                                <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#approveRegistrationModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Manage</button>
-                                                <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#viewParticipantsModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Participants (<?php echo getTotalParticipants($event['event_id']); ?>)</button>
-
-                                                <div class="dropdown">
-                                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="feedbackDropdown<?php echo $event['event_id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">Feedback</button>
-                                                    <ul class="dropdown-menu" aria-labelledby="feedbackDropdown<?php echo $event['event_id']; ?>">
-                                                        <li>
-                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewAllFeedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">
-                                                                View Feedback
-                                                            </a>
-                                                        </li>
-                                                        <li>
-                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#feedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>" data-current-feedback="">
-                                                                Send Feedback
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-
-                                            <?php else: ?>
-                                                <!-- Non-organizer buttons -->
-                                                <?php
-                                                $current_registration = isset($user_registrations[$event['event_id']]) ? $user_registrations[$event['event_id']] : false;
-                                                ?>
-                                                <?php if (!isEventCompleted($event['event_date'])): ?>
-                                                    <!-- Upcoming event buttons for participants -->
-                                                    <?php if ($current_registration && in_array($current_registration['response_status'], ['Pending', 'Confirmed'])): ?>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <?php if (isLoggedIn()): ?>
+                                                <?php if (isOrganizer($_SESSION['user_id'], $event['event_id'])): ?>
+                                                    <!-- Organizer buttons -->
+                                                    <?php if (!isEventCompleted($event['event_date'])): ?>
+                                                        <!-- Upcoming event organizer buttons -->
+                                                        <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEventModal" data-event-id="<?php echo $event['event_id']; ?>" data-title="<?php echo htmlspecialchars($event['event_title']); ?>" data-date="<?php echo $event['event_date']; ?>" data-city="<?php echo htmlspecialchars($event['city']); ?>" data-venue="<?php echo htmlspecialchars($event['venue']); ?>" data-type="<?php echo htmlspecialchars($event['type']); ?>" data-start-time="<?php echo htmlspecialchars($event['start_time']); ?>" data-end-time="<?php echo htmlspecialchars($event['end_time']); ?>">Edit</button>
                                                         <form method="POST" style="display:inline;">
-                                                            <input type="hidden" name="action" value="cancel_join_request">
+                                                            <input type="hidden" name="action" value="delete_event">
                                                             <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
-                                                            <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Request</button>
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this event?');">Delete</button>
                                                         </form>
-                                                    <?php elseif (eventHasOrganizer($event['event_id'])): ?>
-                                                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#joinEventModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Join Event</button>
                                                     <?php endif; ?>
-                                                <?php endif; ?>
+                                                    <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#approveRegistrationModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Manage</button>
+                                                    <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#viewParticipantsModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Participants (<?php echo getTotalParticipants($event['event_id']); ?>)</button>
 
-                                                <!-- NEW: View All Feedback button for confirmed participants -->
-                                                <?php if ($current_registration && $current_registration['response_status'] === 'Confirmed'): ?>
                                                     <div class="dropdown">
-                                                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="feedbackDropdown<?php echo $event['event_id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <i class="fas fa-comments me-1"></i>Feedback
-                                                        </button>
+                                                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="feedbackDropdown<?php echo $event['event_id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">Feedback</button>
                                                         <ul class="dropdown-menu" aria-labelledby="feedbackDropdown<?php echo $event['event_id']; ?>">
                                                             <li>
                                                                 <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewAllFeedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">
@@ -1044,589 +1065,632 @@ foreach ($events as $event) {
                                                             </li>
                                                         </ul>
                                                     </div>
-                                                <?php endif; ?>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <a href="/auth/signin.php" class="btn btn-primary btn-sm">Sign In to Join</a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
 
-            <!-- Past Events Tab -->
-            <div class="tab-pane fade" id="past" role="tabpanel">
-                <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
-                    <?php if (empty($pastEvents)): ?>
-                        <div class="col-12 text-center py-5">
-                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                            <p class="text-muted"><?php echo empty($error_message) ? 'No past events found.' : ''; ?></p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($pastEvents as $event): ?>
-                            <div class="col-md-6 col-lg-4">
-                                <div class="event-card h-100">
-                                    <h5 class="mb-3"><?php echo htmlspecialchars($event['event_title']); ?></h5>
-                                    <p class="mb-2"><i class="fas fa-calendar me-2"></i><?php echo date('F j, Y', strtotime($event['event_date'])); ?></p>
-                                    <p class="mb-2"><i class="fas fa-clock me-2"></i><?php echo htmlspecialchars($event['start_time']) . ' - ' . htmlspecialchars($event['end_time']); ?></p>
-                                    <p class="mb-2"><i class="fas fa-map-marker-alt me-2"></i><?php echo htmlspecialchars($event['venue'] . ', ' . $event['city']); ?></p>
-                                    <p class="mb-3"><i class="fas fa-tag me-2"></i><?php echo htmlspecialchars($event['type']); ?></p>
+                                                <?php else: ?>
+                                                    <!-- Non-organizer buttons -->
+                                                    <?php
+                                                    $current_registration = isset($user_registrations[$event['event_id']]) ? $user_registrations[$event['event_id']] : false;
+                                                    ?>
+                                                    <?php if (!isEventCompleted($event['event_date'])): ?>
+                                                        <!-- Upcoming event buttons for participants -->
+                                                        <?php if ($current_registration && in_array($current_registration['response_status'], ['Pending', 'Confirmed'])): ?>
+                                                            <form method="POST" style="display:inline;">
+                                                                <input type="hidden" name="action" value="cancel_join_request">
+                                                                <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
+                                                                <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Request</button>
+                                                            </form>
+                                                        <?php elseif (eventHasOrganizer($event['event_id'])): ?>
+                                                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#joinEventModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Join Event</button>
+                                                        <?php endif; ?>
+                                                    <?php endif; ?>
 
-                                    <?php if (isLoggedIn() && isset($user_registrations[$event['event_id']])): ?>
-                                        <p><strong>Status:</strong>
-                                            <span class="badge bg-<?php echo $user_registrations[$event['event_id']]['response_status'] == 'Confirmed' ? 'success' : ($user_registrations[$event['event_id']]['response_status'] == 'Pending' ? 'warning' : 'danger'); ?>">
-                                                <?php echo htmlspecialchars($user_registrations[$event['event_id']]['response_status']); ?>
-                                            </span>
-                                        </p>
-                                        <p><strong>Role:</strong>
-                                            <span class="badge badge-<?php echo strtolower($user_registrations[$event['event_id']]['role']); ?>">
-                                                <?php echo htmlspecialchars($user_registrations[$event['event_id']]['role']); ?>
-                                            </span>
-                                        </p>
-
-                                        <?php if ($user_registrations[$event['event_id']]['response_status'] === 'Confirmed'): ?>
-                                            <!-- Display existing feedback if available -->
-                                            <?php if (!empty($user_registrations[$event['event_id']]['feedback'])): ?>
-                                                <div class="feedback-section">
-                                                    <h6><i class="fas fa-comment me-2"></i>Your Feedback:</h6>
-                                                    <p class="feedback-text mb-2"><?php echo htmlspecialchars($user_registrations[$event['event_id']]['feedback']); ?></p>
-                                                </div>
-                                            <?php endif; ?>
-
-                                            <!-- Feedback button - always show for completed events -->
-                                            <button class="btn btn-outline-info btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#feedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>" data-current-feedback="<?php echo htmlspecialchars($user_registrations[$event['event_id']]['feedback'] ?? ''); ?>">
-                                                <i class="fas fa-comment me-1"></i>
-                                                <?php echo !empty($user_registrations[$event['event_id']]['feedback']) ? 'Update Feedback' : 'Add Feedback'; ?>
-                                            </button>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
-
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <?php if (isLoggedIn()): ?>
-                                            <?php if (isOrganizer($_SESSION['user_id'], $event['event_id'])): ?>
-                                                <!-- Organizer buttons -->
-                                                <?php if (!isEventCompleted($event['event_date'])): ?>
-                                                    <!-- Upcoming event organizer buttons -->
-                                                    <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEventModal" data-event-id="<?php echo $event['event_id']; ?>" data-title="<?php echo htmlspecialchars($event['event_title']); ?>" data-date="<?php echo $event['event_date']; ?>" data-city="<?php echo htmlspecialchars($event['city']); ?>" data-venue="<?php echo htmlspecialchars($event['venue']); ?>" data-type="<?php echo htmlspecialchars($event['type']); ?>" data-start-time="<?php echo htmlspecialchars($event['start_time']); ?>" data-end-time="<?php echo htmlspecialchars($event['end_time']); ?>">Edit</button>
-                                                    <form method="POST" style="display:inline;">
-                                                        <input type="hidden" name="action" value="delete_event">
-                                                        <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this event?');">Delete</button>
-                                                    </form>
-                                                <?php endif; ?>
-                                                <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#approveRegistrationModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Manage</button>
-                                                <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#viewParticipantsModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Participants (<?php echo getTotalParticipants($event['event_id']); ?>)</button>
-
-                                                <!-- NEW: View All Feedback button for organizers -->
-                                                <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewAllFeedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">
-                                                    <i class="fas fa-comments me-1"></i>View Feedback
-                                                </button>
-
-                                            <?php else: ?>
-                                                <!-- Non-organizer buttons -->
-                                                <?php
-                                                $current_registration = isset($user_registrations[$event['event_id']]) ? $user_registrations[$event['event_id']] : false;
-                                                ?>
-                                                <?php if (!isEventCompleted($event['event_date'])): ?>
-                                                    <!-- Upcoming event buttons for participants -->
-                                                    <?php if ($current_registration && in_array($current_registration['response_status'], ['Pending', 'Confirmed'])): ?>
-                                                        <form method="POST" style="display:inline;">
-                                                            <input type="hidden" name="action" value="cancel_join_request">
-                                                            <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
-                                                            <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Request</button>
-                                                        </form>
-                                                    <?php elseif (eventHasOrganizer($event['event_id'])): ?>
-                                                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#joinEventModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Join Event</button>
+                                                    <!-- NEW: View All Feedback button for confirmed participants -->
+                                                    <?php if ($current_registration && $current_registration['response_status'] === 'Confirmed'): ?>
+                                                        <div class="dropdown">
+                                                            <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="feedbackDropdown<?php echo $event['event_id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <i class="fas fa-comments me-1"></i>Feedback
+                                                            </button>
+                                                            <ul class="dropdown-menu" aria-labelledby="feedbackDropdown<?php echo $event['event_id']; ?>">
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewAllFeedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">
+                                                                        View Feedback
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#feedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>" data-current-feedback="">
+                                                                        Send Feedback
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
                                                     <?php endif; ?>
                                                 <?php endif; ?>
-
-                                                <!-- NEW: View All Feedback button for confirmed participants -->
-                                                <?php if ($current_registration && $current_registration['response_status'] === 'Confirmed'): ?>
-                                                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewAllFeedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">
-                                                        <i class="fas fa-comments me-1"></i>View Feedback
-                                                    </button>
-                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <a href="/auth/signin.php" class="btn btn-primary btn-sm">Sign In to Join</a>
                                             <?php endif; ?>
-                                        <?php else: ?>
-                                            <a href="/auth/signin.php" class="btn btn-primary btn-sm">Sign In to Join</a>
-                                        <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pagination -->
-        <?php if ($total_pages > 1): ?>
-            <nav aria-label="Page navigation" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&event_type=<?php echo urlencode($event_type); ?>">Previous</a>
-                    </li>
-                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                        <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&event_type=<?php echo urlencode($event_type); ?>"><?php echo $i; ?></a>
-                        </li>
-                    <?php endfor; ?>
-                    <li class="page-item <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&event_type=<?php echo urlencode($event_type); ?>">Next</a>
-                    </li>
-                </ul>
-            </nav>
-        <?php endif; ?>
-    </div>
-</section>
-
-<!-- Add Event Modal -->
-<div class="modal fade" id="addEventModal" tabindex="-1" aria-labelledby="addEventModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background-color: #002147; color: white;">
-                <h5 class="modal-title" id="addEventModalLabel">Register Event</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="add_event">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        You will automatically become the organizer of this event.
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="event_title" class="form-label">Event Title</label>
-                        <input type="text" class="form-control" id="event_title" name="event_title" placeholder="Enter event title" required>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="event_date" class="form-label">Event Date</label>
-                            <input type="date" class="form-control" id="event_date" name="event_date" required min="<?php echo date('Y-m-d'); ?>">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="city" class="form-label">City</label>
-                            <select class="form-select" id="city" name="city" required>
-                                <option value="">Select City</option>
-                                <option value="Dhaka">Dhaka</option>
-                                <option value="Chattogram">Chattogram</option>
-                                <option value="Khulna">Khulna</option>
-                                <option value="Rajshahi">Rajshahi</option>
-                                <option value="Sylhet">Sylhet</option>
-                                <option value="Barishal">Barishal</option>
-                                <option value="Rangpur">Rangpur</option>
-                                <option value="Mymensingh">Mymensingh</option>
-                                <option value="Jessore">Jessore</option>
-                                <option value="Bogura">Bogura</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="venue" class="form-label">Venue</label>
-                        <input type="text" class="form-control" id="venue" name="venue" placeholder="Enter venue" required>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="start_time" class="form-label">Start Time</label>
-                            <input type="time" class="form-control" id="start_time" name="start_time" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="end_time" class="form-label">End Time</label>
-                            <input type="time" class="form-control" id="end_time" name="end_time" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="type" class="form-label">Event Type</label>
-                        <select class="form-select" id="type" name="type" required>
-                            <option value="">Select Event Type</option>
-                            <option value="Workshop">Workshop</option>
-                            <option value="Seminar">Seminar</option>
-                            <option value="Conference">Conference</option>
-                            <option value="Networking">Networking</option>
-                            <option value="Career Fair">Career Fair</option>
-                            <option value="Alumni Meet">Alumni Meet</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" style="background-color:#002147; color:white;">Register Event</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Join Event Modal -->
-<div class="modal fade" id="joinEventModal" tabindex="-1" aria-labelledby="joinEventModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="joinEventModalLabel">Join Event</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="join_event">
-                    <input type="hidden" name="event_id" id="join_event_id">
-
-                    <p>You are requesting to join: <strong id="join_event_title"></strong></p>
-
-                    <div class="mb-3">
-                        <label for="requested_role" class="form-label">Select Your Role</label>
-                        <?php if (isLoggedIn() && isAlumni($_SESSION['user_id'])): ?>
-                            <select class="form-select" id="requested_role" name="requested_role" required>
-                                <option value="">Choose your preferred role...</option>
-                                <option value="Attendee">Attendee</option>
-                                <option value="Speaker">Speaker</option>
-                                <option value="Volunteer">Volunteer</option>
-                                <option value="Sponsor">Sponsor</option>
-                            </select>
-                            <div class="form-text">The organizer will review and may assign a different role.</div>
-                        <?php else: ?>
-                            <select class="form-select" id="requested_role" name="requested_role" required>
-                                <option value="">Choose your role...</option>
-                                <option value="Attendee">Attendee</option>
-                                <option value="Volunteer">Volunteer</option>
-                            </select>
-                            <div class="form-text">Students can join as Attendee or Volunteer. The organizer will review your request.</div>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Submit Request</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
-<!-- Feedback Modal -->
-<div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="feedbackModalLabel">Event Feedback</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <!-- Past Events Tab -->
+                <div class="tab-pane fade" id="past" role="tabpanel">
+                    <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+                        <?php if (empty($pastEvents)): ?>
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                                <p class="text-muted"><?php echo empty($error_message) ? 'No past events found.' : ''; ?></p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($pastEvents as $event): ?>
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="event-card h-100">
+                                        <h5 class="mb-3"><?php echo htmlspecialchars($event['event_title']); ?></h5>
+                                        <p class="mb-2"><i class="fas fa-calendar me-2"></i><?php echo date('F j, Y', strtotime($event['event_date'])); ?></p>
+                                        <p class="mb-2"><i class="fas fa-clock me-2"></i><?php echo htmlspecialchars($event['start_time']) . ' - ' . htmlspecialchars($event['end_time']); ?></p>
+                                        <p class="mb-2"><i class="fas fa-map-marker-alt me-2"></i><?php echo htmlspecialchars($event['venue'] . ', ' . $event['city']); ?></p>
+                                        <p class="mb-3"><i class="fas fa-tag me-2"></i><?php echo htmlspecialchars($event['type']); ?></p>
+
+                                        <?php if (isLoggedIn() && isset($user_registrations[$event['event_id']])): ?>
+                                            <p><strong>Status:</strong>
+                                                <span class="badge bg-<?php echo $user_registrations[$event['event_id']]['response_status'] == 'Confirmed' ? 'success' : ($user_registrations[$event['event_id']]['response_status'] == 'Pending' ? 'warning' : 'danger'); ?>">
+                                                    <?php echo htmlspecialchars($user_registrations[$event['event_id']]['response_status']); ?>
+                                                </span>
+                                            </p>
+                                            <p><strong>Role:</strong>
+                                                <span class="badge badge-<?php echo strtolower($user_registrations[$event['event_id']]['role']); ?>">
+                                                    <?php echo htmlspecialchars($user_registrations[$event['event_id']]['role']); ?>
+                                                </span>
+                                            </p>
+
+                                            <?php if ($user_registrations[$event['event_id']]['response_status'] === 'Confirmed'): ?>
+                                                <!-- Display existing feedback if available -->
+                                                <?php if (!empty($user_registrations[$event['event_id']]['feedback'])): ?>
+                                                    <div class="feedback-section">
+                                                        <h6><i class="fas fa-comment me-2"></i>Your Feedback:</h6>
+                                                        <p class="feedback-text mb-2"><?php echo htmlspecialchars($user_registrations[$event['event_id']]['feedback']); ?></p>
+                                                    </div>
+                                                <?php endif; ?>
+
+                                                <!-- Feedback button - always show for completed events -->
+                                                <button class="btn btn-outline-info btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#feedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>" data-current-feedback="<?php echo htmlspecialchars($user_registrations[$event['event_id']]['feedback'] ?? ''); ?>">
+                                                    <i class="fas fa-comment me-1"></i>
+                                                    <?php echo !empty($user_registrations[$event['event_id']]['feedback']) ? 'Update Feedback' : 'Add Feedback'; ?>
+                                                </button>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <?php if (isLoggedIn()): ?>
+                                                <?php if (isOrganizer($_SESSION['user_id'], $event['event_id'])): ?>
+                                                    <!-- Organizer buttons -->
+                                                    <?php if (!isEventCompleted($event['event_date'])): ?>
+                                                        <!-- Upcoming event organizer buttons -->
+                                                        <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEventModal" data-event-id="<?php echo $event['event_id']; ?>" data-title="<?php echo htmlspecialchars($event['event_title']); ?>" data-date="<?php echo $event['event_date']; ?>" data-city="<?php echo htmlspecialchars($event['city']); ?>" data-venue="<?php echo htmlspecialchars($event['venue']); ?>" data-type="<?php echo htmlspecialchars($event['type']); ?>" data-start-time="<?php echo htmlspecialchars($event['start_time']); ?>" data-end-time="<?php echo htmlspecialchars($event['end_time']); ?>">Edit</button>
+                                                        <form method="POST" style="display:inline;">
+                                                            <input type="hidden" name="action" value="delete_event">
+                                                            <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this event?');">Delete</button>
+                                                        </form>
+                                                    <?php endif; ?>
+                                                    <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#approveRegistrationModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Manage</button>
+                                                    <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#viewParticipantsModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Participants (<?php echo getTotalParticipants($event['event_id']); ?>)</button>
+
+                                                    <!-- NEW: View All Feedback button for organizers -->
+                                                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewAllFeedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">
+                                                        <i class="fas fa-comments me-1"></i>View Feedback
+                                                    </button>
+
+                                                <?php else: ?>
+                                                    <!-- Non-organizer buttons -->
+                                                    <?php
+                                                    $current_registration = isset($user_registrations[$event['event_id']]) ? $user_registrations[$event['event_id']] : false;
+                                                    ?>
+                                                    <?php if (!isEventCompleted($event['event_date'])): ?>
+                                                        <!-- Upcoming event buttons for participants -->
+                                                        <?php if ($current_registration && in_array($current_registration['response_status'], ['Pending', 'Confirmed'])): ?>
+                                                            <form method="POST" style="display:inline;">
+                                                                <input type="hidden" name="action" value="cancel_join_request">
+                                                                <input type="hidden" name="event_id" value="<?php echo $event['event_id']; ?>">
+                                                                <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Request</button>
+                                                            </form>
+                                                        <?php elseif (eventHasOrganizer($event['event_id'])): ?>
+                                                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#joinEventModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">Join Event</button>
+                                                        <?php endif; ?>
+                                                    <?php endif; ?>
+
+                                                    <!-- NEW: View All Feedback button for confirmed participants -->
+                                                    <?php if ($current_registration && $current_registration['response_status'] === 'Confirmed'): ?>
+                                                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#viewAllFeedbackModal" data-event-id="<?php echo $event['event_id']; ?>" data-event-title="<?php echo htmlspecialchars($event['event_title']); ?>">
+                                                            <i class="fas fa-comments me-1"></i>View Feedback
+                                                        </button>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <a href="/auth/signin.php" class="btn btn-primary btn-sm">Sign In to Join</a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
-            <form method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="submit_feedback">
-                    <input type="hidden" name="event_id" id="feedback_event_id">
 
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Note:</strong> Feedback can only be submitted for completed events that you attended.
-                    </div>
-
-                    <p>Feedback for: <strong id="feedback_event_title"></strong></p>
-
-                    <div class="mb-3">
-                        <label for="feedback" class="form-label">Your Feedback <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="feedback" name="feedback" rows="5" placeholder="Please share your experience about this event. What did you like? What could be improved? Your feedback helps us organize better events in the future..." required></textarea>
-                        <div class="form-text">Minimum 10 characters required. Be specific and constructive.</div>
-                    </div>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info">Submit Feedback</button>
-                </div>
-            </form>
+            <!-- Pagination -->
+            <?php if ($total_pages > 1): ?>
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
+                            <a class="page-link" href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&event_type=<?php echo urlencode($event_type); ?>">Previous</a>
+                        </li>
+                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                            <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
+                                <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&event_type=<?php echo urlencode($event_type); ?>"><?php echo $i; ?></a>
+                            </li>
+                        <?php endfor; ?>
+                        <li class="page-item <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
+                            <a class="page-link" href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&event_type=<?php echo urlencode($event_type); ?>">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            <?php endif; ?>
         </div>
-    </div>
-</div>
+    </section>
 
-<!-- Edit Event Modal -->
-<div class="modal fade" id="editEventModal" tabindex="-1" aria-labelledby="editEventModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background-color:#ffc107; color:#212529;">
-                <h5 class="modal-title" id="editEventModalLabel">Edit Event</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="edit_event">
-                    <input type="hidden" name="event_id" id="edit_event_id">
-
-                    <div class="mb-3">
-                        <label for="edit_event_title" class="form-label">Event Title</label>
-                        <input type="text" class="form-control" id="edit_event_title" name="event_title" placeholder="Enter event title" required>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="edit_event_date" class="form-label">Event Date</label>
-                            <input type="date" class="form-control" id="edit_event_date" name="event_date" required min="<?php echo date('Y-m-d'); ?>">
+    <!-- Add Event Modal -->
+    <div class="modal fade" id="addEventModal" tabindex="-1" aria-labelledby="addEventModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #002147; color: white;">
+                    <h5 class="modal-title" id="addEventModalLabel">Register Event</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="add_event">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            You will automatically become the organizer of this event.
                         </div>
-                        <div class="col-md-6">
-                            <label for="edit_city" class="form-label">City</label>
-                            <select class="form-select" id="edit_city" name="city" required>
-                                <option value="">Select City</option>
-                                <option value="Dhaka">Dhaka</option>
-                                <option value="Chattogram">Chattogram</option>
-                                <option value="Khulna">Khulna</option>
-                                <option value="Rajshahi">Rajshahi</option>
-                                <option value="Sylhet">Sylhet</option>
-                                <option value="Barishal">Barishal</option>
-                                <option value="Rangpur">Rangpur</option>
-                                <option value="Mymensingh">Mymensingh</option>
-                                <option value="Jessore">Jessore</option>
-                                <option value="Bogura">Bogura</option>
+
+                        <div class="mb-3">
+                            <label for="event_title" class="form-label">Event Title</label>
+                            <input type="text" class="form-control" id="event_title" name="event_title" placeholder="Enter event title" required>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="event_date" class="form-label">Event Date</label>
+                                <input type="date" class="form-control" id="event_date" name="event_date" required min="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="city" class="form-label">City</label>
+                                <select class="form-select" id="city" name="city" required>
+                                    <option value="">Select City</option>
+                                    <option value="Dhaka">Dhaka</option>
+                                    <option value="Chattogram">Chattogram</option>
+                                    <option value="Khulna">Khulna</option>
+                                    <option value="Rajshahi">Rajshahi</option>
+                                    <option value="Sylhet">Sylhet</option>
+                                    <option value="Barishal">Barishal</option>
+                                    <option value="Rangpur">Rangpur</option>
+                                    <option value="Mymensingh">Mymensingh</option>
+                                    <option value="Jessore">Jessore</option>
+                                    <option value="Bogura">Bogura</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="venue" class="form-label">Venue</label>
+                            <input type="text" class="form-control" id="venue" name="venue" placeholder="Enter venue" required>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="start_time" class="form-label">Start Time</label>
+                                <input type="time" class="form-control" id="start_time" name="start_time" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="end_time" class="form-label">End Time</label>
+                                <input type="time" class="form-control" id="end_time" name="end_time" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Event Type</label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="">Select Event Type</option>
+                                <option value="Workshop">Workshop</option>
+                                <option value="Seminar">Seminar</option>
+                                <option value="Conference">Conference</option>
+                                <option value="Networking">Networking</option>
+                                <option value="Career Fair">Career Fair</option>
+                                <option value="Alumni Meet">Alumni Meet</option>
                             </select>
                         </div>
                     </div>
-
-                    <div class="mb-3">
-                        <label for="edit_venue" class="form-label">Venue</label>
-                        <input type="text" class="form-control" id="edit_venue" name="venue" placeholder="Enter venue" required>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" style="background-color:#002147; color:white;">Register Event</button>
                     </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="edit_start_time" class="form-label">Start Time</label>
-                            <input type="time" class="form-control" id="edit_start_time" name="start_time" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="edit_end_time" class="form-label">End Time</label>
-                            <input type="time" class="form-control" id="edit_end_time" name="end_time" required>
+    <!-- Join Event Modal -->
+    <div class="modal fade" id="joinEventModal" tabindex="-1" aria-labelledby="joinEventModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="joinEventModalLabel">Join Event</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="join_event">
+                        <input type="hidden" name="event_id" id="join_event_id">
+
+                        <p>You are requesting to join: <strong id="join_event_title"></strong></p>
+
+                        <div class="mb-3">
+                            <label for="requested_role" class="form-label">Select Your Role</label>
+                            <?php if (isLoggedIn() && isAlumni($_SESSION['user_id'])): ?>
+                                <select class="form-select" id="requested_role" name="requested_role" required>
+                                    <option value="">Choose your preferred role...</option>
+                                    <option value="Attendee">Attendee</option>
+                                    <option value="Speaker">Speaker</option>
+                                    <option value="Volunteer">Volunteer</option>
+                                    <option value="Sponsor">Sponsor</option>
+                                </select>
+                                <div class="form-text">The organizer will review and may assign a different role.</div>
+                            <?php else: ?>
+                                <select class="form-select" id="requested_role" name="requested_role" required>
+                                    <option value="">Choose your role...</option>
+                                    <option value="Attendee">Attendee</option>
+                                    <option value="Volunteer">Volunteer</option>
+                                </select>
+                                <div class="form-text">Students can join as Attendee or Volunteer. The organizer will review your request.</div>
+                            <?php endif; ?>
                         </div>
                     </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-                    <div class="mb-3">
-                        <label for="edit_type" class="form-label">Event Type</label>
-                        <select class="form-select" id="edit_type" name="type" required>
-                            <option value="">Select Event Type</option>
-                            <option value="Workshop">Workshop</option>
-                            <option value="Seminar">Seminar</option>
-                            <option value="Conference">Conference</option>
-                            <option value="Networking">Networking</option>
-                            <option value="Career Fair">Career Fair</option>
-                            <option value="Alumni Meet">Alumni Meet</option>
-                        </select>
+    <!-- Feedback Modal -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="feedbackModalLabel">Event Feedback</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="submit_feedback">
+                        <input type="hidden" name="event_id" id="feedback_event_id">
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Feedback can only be submitted for completed events that you attended.
+                        </div>
+
+                        <p>Feedback for: <strong id="feedback_event_title"></strong></p>
+
+                        <div class="mb-3">
+                            <label for="feedback" class="form-label">Your Feedback <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="feedback" name="feedback" rows="5" placeholder="Please share your experience about this event. What did you like? What could be improved? Your feedback helps us organize better events in the future..." required></textarea>
+                            <div class="form-text">Minimum 10 characters required. Be specific and constructive.</div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-info">Submit Feedback</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Event Modal -->
+    <div class="modal fade" id="editEventModal" tabindex="-1" aria-labelledby="editEventModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color:#ffc107; color:#212529;">
+                    <h5 class="modal-title" id="editEventModalLabel">Edit Event</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="edit_event">
+                        <input type="hidden" name="event_id" id="edit_event_id">
+
+                        <div class="mb-3">
+                            <label for="edit_event_title" class="form-label">Event Title</label>
+                            <input type="text" class="form-control" id="edit_event_title" name="event_title" placeholder="Enter event title" required>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="edit_event_date" class="form-label">Event Date</label>
+                                <input type="date" class="form-control" id="edit_event_date" name="event_date" required min="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_city" class="form-label">City</label>
+                                <select class="form-select" id="edit_city" name="city" required>
+                                    <option value="">Select City</option>
+                                    <option value="Dhaka">Dhaka</option>
+                                    <option value="Chattogram">Chattogram</option>
+                                    <option value="Khulna">Khulna</option>
+                                    <option value="Rajshahi">Rajshahi</option>
+                                    <option value="Sylhet">Sylhet</option>
+                                    <option value="Barishal">Barishal</option>
+                                    <option value="Rangpur">Rangpur</option>
+                                    <option value="Mymensingh">Mymensingh</option>
+                                    <option value="Jessore">Jessore</option>
+                                    <option value="Bogura">Bogura</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_venue" class="form-label">Venue</label>
+                            <input type="text" class="form-control" id="edit_venue" name="venue" placeholder="Enter venue" required>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="edit_start_time" class="form-label">Start Time</label>
+                                <input type="time" class="form-control" id="edit_start_time" name="start_time" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_end_time" class="form-label">End Time</label>
+                                <input type="time" class="form-control" id="edit_end_time" name="end_time" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_type" class="form-label">Event Type</label>
+                            <select class="form-select" id="edit_type" name="type" required>
+                                <option value="">Select Event Type</option>
+                                <option value="Workshop">Workshop</option>
+                                <option value="Seminar">Seminar</option>
+                                <option value="Conference">Conference</option>
+                                <option value="Networking">Networking</option>
+                                <option value="Career Fair">Career Fair</option>
+                                <option value="Alumni Meet">Alumni Meet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" style="background-color:#ffc107; color:#212529;">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approve Registration Modal -->
+    <div class="modal fade" id="approveRegistrationModal" tabindex="-1" aria-labelledby="approveRegistrationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="approveRegistrationModalLabel">Manage Registrations</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Role</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Registration Status</th>
+                                    <th>Select</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registrantsTableBody">
+                                <!-- Populated dynamically via JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" style="background-color:#ffc107; color:#212529;">Save Changes</button>
+                    <button type="button" class="btn btn-danger" id="rejectSelectedBtn">Reject Selected</button>
+                    <button type="button" class="btn btn-success" id="approveSelectedBtn">Approve Selected</button>
                 </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Approve Registration Modal -->
-<div class="modal fade" id="approveRegistrationModal" tabindex="-1" aria-labelledby="approveRegistrationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="approveRegistrationModalLabel">Manage Registrations</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Role</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Registration Status</th>
-                            <th>Select</th>
-                        </tr>
-                        </thead>
-                        <tbody id="registrantsTableBody">
-                        <!-- Populated dynamically via JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-danger" id="rejectSelectedBtn">Reject Selected</button>
-                <button type="button" class="btn btn-success" id="approveSelectedBtn">Approve Selected</button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- View Participants Modal -->
-<div class="modal fade" id="viewParticipantsModal" tabindex="-1" aria-labelledby="viewParticipantsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="viewParticipantsModalLabel">View Participants</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Role</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Registration Status</th>
-                            <th>Select</th>
-                        </tr>
-                        </thead>
-                        <tbody id="participantsTableBody">
-                        <!-- Populated dynamically via JavaScript -->
-                        </tbody>
-                    </table>
+    <!-- View Participants Modal -->
+    <div class="modal fade" id="viewParticipantsModal" tabindex="-1" aria-labelledby="viewParticipantsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="viewParticipantsModalLabel">View Participants</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveRolesBtn">Update Roles</button>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Role</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Registration Status</th>
+                                    <th>Select</th>
+                                </tr>
+                            </thead>
+                            <tbody id="participantsTableBody">
+                                <!-- Populated dynamically via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveRolesBtn">Update Roles</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- View All Feedback Modal -->
-<div class="modal fade" id="viewAllFeedbackModal" tabindex="-1" aria-labelledby="viewAllFeedbackModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="viewAllFeedbackModalLabel">Event Feedback</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="feedbackContent">
-                    <!-- Feedback content will be loaded here -->
+    <!-- View All Feedback Modal -->
+    <div class="modal fade" id="viewAllFeedbackModal" tabindex="-1" aria-labelledby="viewAllFeedbackModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="viewAllFeedbackModalLabel">Event Feedback</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <div class="modal-body">
+                    <div id="feedbackContent">
+                        <!-- Feedback content will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<?php include '../includes/footer.php'; ?>
+    <?php include '../includes/footer.php'; ?>
 
-<!-- JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-<script>
-    AOS.init({ duration: 1000, once: true });
-
-    // Populate join event modal
-    const joinEventModal = document.getElementById('joinEventModal');
-    if (joinEventModal) {
-        joinEventModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const eventId = button.getAttribute('data-event-id');
-            const eventTitle = button.getAttribute('data-event-title');
-
-            const modal = this;
-            modal.querySelector('#join_event_id').value = eventId;
-            modal.querySelector('#join_event_title').textContent = eventTitle;
-        });
-    }
-
-    // Populate feedback modal with enhanced validation
-    const feedbackModal = document.getElementById('feedbackModal');
-    if (feedbackModal) {
-        feedbackModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const eventId = button.getAttribute('data-event-id');
-            const eventTitle = button.getAttribute('data-event-title');
-            const currentFeedback = button.getAttribute('data-current-feedback');
-
-            const modal = this;
-            modal.querySelector('#feedback_event_id').value = eventId;
-            modal.querySelector('#feedback_event_title').textContent = eventTitle;
-            modal.querySelector('#feedback').value = currentFeedback || '';
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 1000,
+            once: true
         });
 
-        // Enhanced feedback form validation
-        const feedbackForm = feedbackModal.querySelector('form');
-        if (feedbackForm) {
-            feedbackForm.addEventListener('submit', function(e) {
-                const feedbackText = this.querySelector('#feedback').value.trim();
+        // Populate join event modal
+        const joinEventModal = document.getElementById('joinEventModal');
+        if (joinEventModal) {
+            joinEventModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const eventId = button.getAttribute('data-event-id');
+                const eventTitle = button.getAttribute('data-event-title');
 
-                if (feedbackText.length < 10) {
-                    e.preventDefault();
-                    alert('Please provide at least 10 characters of feedback.');
-                    return false;
-                }
+                const modal = this;
+                modal.querySelector('#join_event_id').value = eventId;
+                modal.querySelector('#join_event_title').textContent = eventTitle;
             });
         }
-    }
 
-    // Populate edit modal with event data
-    const editEventModal = document.getElementById('editEventModal');
-    if (editEventModal) {
-        editEventModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const eventId = button.getAttribute('data-event-id');
-            const title = button.getAttribute('data-title');
-            const date = button.getAttribute('data-date');
-            const city = button.getAttribute('data-city');
-            const venue = button.getAttribute('data-venue');
-            const type = button.getAttribute('data-type');
-            const startTime = button.getAttribute('data-start-time');
-            const endTime = button.getAttribute('data-end-time');
+        // Populate feedback modal with enhanced validation
+        const feedbackModal = document.getElementById('feedbackModal');
+        if (feedbackModal) {
+            feedbackModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const eventId = button.getAttribute('data-event-id');
+                const eventTitle = button.getAttribute('data-event-title');
+                const currentFeedback = button.getAttribute('data-current-feedback');
 
-            const modal = this;
-            modal.querySelector('#edit_event_id').value = eventId;
-            modal.querySelector('#edit_event_title').value = title;
-            modal.querySelector('#edit_event_date').value = date;
-            modal.querySelector('#edit_city').value = city;
-            modal.querySelector('#edit_venue').value = venue;
-            modal.querySelector('#edit_type').value = type;
-            modal.querySelector('#edit_start_time').value = startTime;
-            modal.querySelector('#edit_end_time').value = endTime;
-        });
-    }
+                const modal = this;
+                modal.querySelector('#feedback_event_id').value = eventId;
+                modal.querySelector('#feedback_event_title').textContent = eventTitle;
+                modal.querySelector('#feedback').value = currentFeedback || '';
+            });
 
-    // Populate approve registration modal with registrants
-    let currentEventId = null; // Store event ID for approve/reject/update actions
-    const approveRegistrationModal = document.getElementById('approveRegistrationModal');
-    if (approveRegistrationModal) {
-        approveRegistrationModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            currentEventId = button.getAttribute('data-event-id'); // Store event ID
-            const eventTitle = button.getAttribute('data-event-title');
-            const modal = this;
-            modal.querySelector('#approveRegistrationModalLabel').textContent = `Manage Registrations for ${eventTitle}`;
+            // Enhanced feedback form validation
+            const feedbackForm = feedbackModal.querySelector('form');
+            if (feedbackForm) {
+                feedbackForm.addEventListener('submit', function(e) {
+                    const feedbackText = this.querySelector('#feedback').value.trim();
 
-            // Fetch registrants via AJAX
-            fetch('events.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `action=fetch_registrants&event_id=${currentEventId}`
-            })
-                .then(response => response.json())
-                .then(data => {
-                    const tableBody = document.getElementById('registrantsTableBody');
-                    tableBody.innerHTML = '';
-                    if (data.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No registrants found.</td></tr>';
-                    } else {
-                        data.forEach(reg => {
-                            const row = document.createElement('tr');
-                            const roleOptions = ['Attendee', 'Organizer', 'Speaker', 'Volunteer', 'Sponsor']
-                                .map(role => `<option value="${role}" ${reg.role === role ? 'selected' : ''}>${role}</option>`)
-                                .join('');
+                    if (feedbackText.length < 10) {
+                        e.preventDefault();
+                        alert('Please provide at least 10 characters of feedback.');
+                        return false;
+                    }
+                });
+            }
+        }
 
-                            row.innerHTML = `
+        // Populate edit modal with event data
+        const editEventModal = document.getElementById('editEventModal');
+        if (editEventModal) {
+            editEventModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const eventId = button.getAttribute('data-event-id');
+                const title = button.getAttribute('data-title');
+                const date = button.getAttribute('data-date');
+                const city = button.getAttribute('data-city');
+                const venue = button.getAttribute('data-venue');
+                const type = button.getAttribute('data-type');
+                const startTime = button.getAttribute('data-start-time');
+                const endTime = button.getAttribute('data-end-time');
+
+                const modal = this;
+                modal.querySelector('#edit_event_id').value = eventId;
+                modal.querySelector('#edit_event_title').value = title;
+                modal.querySelector('#edit_event_date').value = date;
+                modal.querySelector('#edit_city').value = city;
+                modal.querySelector('#edit_venue').value = venue;
+                modal.querySelector('#edit_type').value = type;
+                modal.querySelector('#edit_start_time').value = startTime;
+                modal.querySelector('#edit_end_time').value = endTime;
+            });
+        }
+
+        // Populate approve registration modal with registrants
+        let currentEventId = null; // Store event ID for approve/reject/update actions
+        const approveRegistrationModal = document.getElementById('approveRegistrationModal');
+        if (approveRegistrationModal) {
+            approveRegistrationModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                currentEventId = button.getAttribute('data-event-id'); // Store event ID
+                const eventTitle = button.getAttribute('data-event-title');
+                const modal = this;
+                modal.querySelector('#approveRegistrationModalLabel').textContent = `Manage Registrations for ${eventTitle}`;
+
+                // Fetch registrants via AJAX
+                fetch('events.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `action=fetch_registrants&event_id=${currentEventId}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const tableBody = document.getElementById('registrantsTableBody');
+                        tableBody.innerHTML = '';
+                        if (data.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No registrants found.</td></tr>';
+                        } else {
+                            data.forEach(reg => {
+                                const row = document.createElement('tr');
+                                const roleOptions = ['Attendee', 'Organizer', 'Speaker', 'Volunteer', 'Sponsor']
+                                    .map(role => `<option value="${role}" ${reg.role === role ? 'selected' : ''}>${role}</option>`)
+                                    .join('');
+
+                                row.innerHTML = `
                                 <td>${reg.full_name} (${reg.user_status})</td>
                                 <td>${reg.user_status}</td>
                                 <td>
@@ -1643,159 +1707,161 @@ foreach ($events as $event) {
                                 ''}
                                 </td>
                             `;
-                            tableBody.appendChild(row);
+                                tableBody.appendChild(row);
+                            });
+                        }
+                    })
+                    .then(() => {
+                        // Enable/disable buttons based on checkbox state
+                        const checkboxes = document.querySelectorAll('#registrantsTableBody input[name="person_ids[]"]');
+                        const approveBtn = document.getElementById('approveSelectedBtn');
+                        const rejectBtn = document.getElementById('rejectSelectedBtn');
+
+                        const updateButtonState = () => {
+                            const checked = document.querySelectorAll('#registrantsTableBody input[name="person_ids[]"]:checked').length > 0;
+                            approveBtn.disabled = !checked;
+                            rejectBtn.disabled = !checked;
+                        };
+
+                        checkboxes.forEach(checkbox => {
+                            checkbox.addEventListener('change', updateButtonState);
                         });
-                    }
-                })
-                .then(() => {
-                    // Enable/disable buttons based on checkbox state
-                    const checkboxes = document.querySelectorAll('#registrantsTableBody input[name="person_ids[]"]');
-                    const approveBtn = document.getElementById('approveSelectedBtn');
-                    const rejectBtn = document.getElementById('rejectSelectedBtn');
 
-                    const updateButtonState = () => {
-                        const checked = document.querySelectorAll('#registrantsTableBody input[name="person_ids[]"]:checked').length > 0;
-                        approveBtn.disabled = !checked;
-                        rejectBtn.disabled = !checked;
-                    };
-
-                    checkboxes.forEach(checkbox => {
-                        checkbox.addEventListener('change', updateButtonState);
+                        updateButtonState();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching registrants:', error);
+                        document.getElementById('registrantsTableBody').innerHTML = '<tr><td colspan="7" class="text-center">Error loading registrants.</td></tr>';
                     });
+            });
+        }
 
-                    updateButtonState();
-                })
-                .catch(error => {
-                    console.error('Error fetching registrants:', error);
-                    document.getElementById('registrantsTableBody').innerHTML = '<tr><td colspan="7" class="text-center">Error loading registrants.</td></tr>';
+        // Handle Approve Selected button
+        const approveSelectedBtn = document.getElementById('approveSelectedBtn');
+        if (approveSelectedBtn) {
+            approveSelectedBtn.addEventListener('click', function() {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'events.php';
+                form.style.display = 'none';
+
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'approve_registration';
+                form.appendChild(actionInput);
+
+                const eventIdInput = document.createElement('input');
+                eventIdInput.type = 'hidden';
+                eventIdInput.name = 'event_id';
+                eventIdInput.value = currentEventId;
+                form.appendChild(eventIdInput);
+
+                const checkboxes = document.querySelectorAll('#registrantsTableBody input[name="person_ids[]"]:checked');
+                const rows = document.querySelectorAll('#registrantsTableBody tr');
+                const selectedIndices = Array.from(checkboxes).map(cb => Array.from(rows).findIndex(row => row.contains(cb)));
+
+                selectedIndices.forEach((rowIndex, i) => {
+                    const personIdInput = document.createElement('input');
+                    personIdInput.type = 'hidden';
+                    personIdInput.name = 'person_ids[]';
+                    personIdInput.value = checkboxes[i].value;
+                    form.appendChild(personIdInput);
+
+                    const roleInput = document.createElement('input');
+                    roleInput.type = 'hidden';
+                    roleInput.name = 'roles[]';
+                    const roleSelect = rows[rowIndex].querySelector('select[name="roles[]"]');
+                    roleInput.value = roleSelect ? roleSelect.value : 'Attendee';
+                    form.appendChild(roleInput);
                 });
-        });
-    }
 
-    // Handle Approve Selected button
-    const approveSelectedBtn = document.getElementById('approveSelectedBtn');
-    if (approveSelectedBtn) {
-        approveSelectedBtn.addEventListener('click', function() {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'events.php';
-            form.style.display = 'none';
+                if (checkboxes.length === 0) {
+                    alert('Please select at least one registrant to approve.');
+                    return;
+                }
 
-            const actionInput = document.createElement('input');
-            actionInput.type = 'hidden';
-            actionInput.name = 'action';
-            actionInput.value = 'approve_registration';
-            form.appendChild(actionInput);
-
-            const eventIdInput = document.createElement('input');
-            eventIdInput.type = 'hidden';
-            eventIdInput.name = 'event_id';
-            eventIdInput.value = currentEventId;
-            form.appendChild(eventIdInput);
-
-            const checkboxes = document.querySelectorAll('#registrantsTableBody input[name="person_ids[]"]:checked');
-            const rows = document.querySelectorAll('#registrantsTableBody tr');
-            const selectedIndices = Array.from(checkboxes).map(cb => Array.from(rows).findIndex(row => row.contains(cb)));
-
-            selectedIndices.forEach((rowIndex, i) => {
-                const personIdInput = document.createElement('input');
-                personIdInput.type = 'hidden';
-                personIdInput.name = 'person_ids[]';
-                personIdInput.value = checkboxes[i].value;
-                form.appendChild(personIdInput);
-
-                const roleInput = document.createElement('input');
-                roleInput.type = 'hidden';
-                roleInput.name = 'roles[]';
-                const roleSelect = rows[rowIndex].querySelector('select[name="roles[]"]');
-                roleInput.value = roleSelect ? roleSelect.value : 'Attendee';
-                form.appendChild(roleInput);
+                document.body.appendChild(form);
+                form.submit();
             });
+        }
 
-            if (checkboxes.length === 0) {
-                alert('Please select at least one registrant to approve.');
-                return;
-            }
+        // Handle Reject Selected button
+        const rejectSelectedBtn = document.getElementById('rejectSelectedBtn');
+        if (rejectSelectedBtn) {
+            rejectSelectedBtn.addEventListener('click', function() {
+                if (!confirm('Are you sure you want to reject the selected registrations?')) {
+                    return;
+                }
 
-            document.body.appendChild(form);
-            form.submit();
-        });
-    }
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'events.php';
+                form.style.display = 'none';
 
-    // Handle Reject Selected button
-    const rejectSelectedBtn = document.getElementById('rejectSelectedBtn');
-    if (rejectSelectedBtn) {
-        rejectSelectedBtn.addEventListener('click', function() {
-            if (!confirm('Are you sure you want to reject the selected registrations?')) {
-                return;
-            }
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'reject_registration';
+                form.appendChild(actionInput);
 
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'events.php';
-            form.style.display = 'none';
+                const eventIdInput = document.createElement('input');
+                eventIdInput.type = 'hidden';
+                eventIdInput.name = 'event_id';
+                eventIdInput.value = currentEventId;
+                form.appendChild(eventIdInput);
 
-            const actionInput = document.createElement('input');
-            actionInput.type = 'hidden';
-            actionInput.name = 'action';
-            actionInput.value = 'reject_registration';
-            form.appendChild(actionInput);
+                const checkboxes = document.querySelectorAll('#registrantsTableBody input[name="person_ids[]"]:checked');
+                checkboxes.forEach(checkbox => {
+                    const personIdInput = document.createElement('input');
+                    personIdInput.type = 'hidden';
+                    personIdInput.name = 'person_ids[]';
+                    personIdInput.value = checkbox.value;
+                    form.appendChild(personIdInput);
+                });
 
-            const eventIdInput = document.createElement('input');
-            eventIdInput.type = 'hidden';
-            eventIdInput.name = 'event_id';
-            eventIdInput.value = currentEventId;
-            form.appendChild(eventIdInput);
+                if (checkboxes.length === 0) {
+                    alert('Please select at least one registrant to reject.');
+                    return;
+                }
 
-            const checkboxes = document.querySelectorAll('#registrantsTableBody input[name="person_ids[]"]:checked');
-            checkboxes.forEach(checkbox => {
-                const personIdInput = document.createElement('input');
-                personIdInput.type = 'hidden';
-                personIdInput.name = 'person_ids[]';
-                personIdInput.value = checkbox.value;
-                form.appendChild(personIdInput);
+                document.body.appendChild(form);
+                form.submit();
             });
+        }
 
-            if (checkboxes.length === 0) {
-                alert('Please select at least one registrant to reject.');
-                return;
-            }
+        // Populate view participants modal with registrants
+        const viewParticipantsModal = document.getElementById('viewParticipantsModal');
+        if (viewParticipantsModal) {
+            viewParticipantsModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                currentEventId = button.getAttribute('data-event-id'); // Store event ID
+                const eventTitle = button.getAttribute('data-event-title');
+                const modal = this;
+                modal.querySelector('#viewParticipantsModalLabel').textContent = `View Participants for ${eventTitle}`;
 
-            document.body.appendChild(form);
-            form.submit();
-        });
-    }
+                // Fetch registrants via AJAX
+                fetch('events.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `action=fetch_registrants&event_id=${currentEventId}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const tableBody = document.getElementById('participantsTableBody');
+                        tableBody.innerHTML = '';
+                        if (data.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No participants found.</td></tr>';
+                        } else {
+                            data.forEach(reg => {
+                                const row = document.createElement('tr');
+                                const roleOptions = ['Attendee', 'Organizer', 'Speaker', 'Volunteer', 'Sponsor']
+                                    .map(role => `<option value="${role}" ${reg.role === role ? 'selected' : ''}>${role}</option>`)
+                                    .join('');
 
-    // Populate view participants modal with registrants
-    const viewParticipantsModal = document.getElementById('viewParticipantsModal');
-    if (viewParticipantsModal) {
-        viewParticipantsModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            currentEventId = button.getAttribute('data-event-id'); // Store event ID
-            const eventTitle = button.getAttribute('data-event-title');
-            const modal = this;
-            modal.querySelector('#viewParticipantsModalLabel').textContent = `View Participants for ${eventTitle}`;
-
-            // Fetch registrants via AJAX
-            fetch('events.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `action=fetch_registrants&event_id=${currentEventId}`
-            })
-                .then(response => response.json())
-                .then(data => {
-                    const tableBody = document.getElementById('participantsTableBody');
-                    tableBody.innerHTML = '';
-                    if (data.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No participants found.</td></tr>';
-                    } else {
-                        data.forEach(reg => {
-                            const row = document.createElement('tr');
-                            const roleOptions = ['Attendee', 'Organizer', 'Speaker', 'Volunteer', 'Sponsor']
-                                .map(role => `<option value="${role}" ${reg.role === role ? 'selected' : ''}>${role}</option>`)
-                                .join('');
-
-                            row.innerHTML = `
+                                row.innerHTML = `
                                 <td>${reg.full_name} (${reg.user_status})</td>
                                 <td>${reg.user_status}</td>
                                 <td>
@@ -1810,159 +1876,159 @@ foreach ($events as $event) {
                                     <input type="checkbox" name="person_ids[]" value="${reg.person_id}" data-user-status="${reg.user_status}">
                                 </td>
                             `;
-                            tableBody.appendChild(row);
+                                tableBody.appendChild(row);
+                            });
+                        }
+                    })
+                    .then(() => {
+                        // Enable/disable save button based on role selection changes
+                        const roleSelects = document.querySelectorAll('#participantsTableBody select[name="roles[]"]');
+                        const saveBtn = document.getElementById('saveRolesBtn');
+
+                        const updateButtonState = () => {
+                            const hasChanges = Array.from(roleSelects).some(select => select.value !== select.options[select.selectedIndex].defaultSelected);
+                            saveBtn.disabled = !hasChanges;
+                        };
+
+                        roleSelects.forEach(select => {
+                            select.addEventListener('change', updateButtonState);
                         });
-                    }
-                })
-                .then(() => {
-                    // Enable/disable save button based on role selection changes
-                    const roleSelects = document.querySelectorAll('#participantsTableBody select[name="roles[]"]');
-                    const saveBtn = document.getElementById('saveRolesBtn');
 
-                    const updateButtonState = () => {
-                        const hasChanges = Array.from(roleSelects).some(select => select.value !== select.options[select.selectedIndex].defaultSelected);
-                        saveBtn.disabled = !hasChanges;
-                    };
-
-                    roleSelects.forEach(select => {
-                        select.addEventListener('change', updateButtonState);
+                        updateButtonState();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching participants:', error);
+                        document.getElementById('participantsTableBody').innerHTML = '<tr><td colspan="6" class="text-center">Error loading participants.</td></tr>';
                     });
-
-                    updateButtonState();
-                })
-                .catch(error => {
-                    console.error('Error fetching participants:', error);
-                    document.getElementById('participantsTableBody').innerHTML = '<tr><td colspan="6" class="text-center">Error loading participants.</td></tr>';
-                });
-        });
-    }
-
-    // Handle Save Changes button for role updates
-    const saveRolesBtn = document.getElementById('saveRolesBtn');
-    if (saveRolesBtn) {
-        saveRolesBtn.addEventListener('click', function() {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'events.php';
-            form.style.display = 'none';
-
-            const actionInput = document.createElement('input');
-            actionInput.type = 'hidden';
-            actionInput.name = 'action';
-            actionInput.value = 'update_roles';
-            form.appendChild(actionInput);
-
-            const eventIdInput = document.createElement('input');
-            eventIdInput.type = 'hidden';
-            eventIdInput.name = 'event_id';
-            eventIdInput.value = currentEventId;
-            form.appendChild(eventIdInput);
-
-            const roleSelects = document.querySelectorAll('#participantsTableBody select[name="roles[]"]');
-            const rows = document.querySelectorAll('#participantsTableBody tr');
-
-            roleSelects.forEach((select, i) => {
-                const personIdInput = document.createElement('input');
-                personIdInput.type = 'hidden';
-                personIdInput.name = 'person_ids[]';
-                personIdInput.value = data[i].person_id; // Assuming data is accessible from the initial fetch
-                form.appendChild(personIdInput);
-
-                const roleInput = document.createElement('input');
-                roleInput.type = 'hidden';
-                roleInput.name = 'roles[]';
-                roleInput.value = select.value;
-                form.appendChild(roleInput);
             });
+        }
 
-            if (roleSelects.length === 0) {
-                alert('No participants available to update roles.');
-                return;
-            }
+        // Handle Save Changes button for role updates
+        const saveRolesBtn = document.getElementById('saveRolesBtn');
+        if (saveRolesBtn) {
+            saveRolesBtn.addEventListener('click', function() {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'events.php';
+                form.style.display = 'none';
 
-            document.body.appendChild(form);
-            form.submit();
-        });
-    }
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'update_roles';
+                form.appendChild(actionInput);
 
-    // Form validation for event creation and editing
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const startTime = this.querySelector('input[name="start_time"]');
-            const endTime = this.querySelector('input[name="end_time"]');
-            const eventDate = this.querySelector('input[name="event_date"]');
+                const eventIdInput = document.createElement('input');
+                eventIdInput.type = 'hidden';
+                eventIdInput.name = 'event_id';
+                eventIdInput.value = currentEventId;
+                form.appendChild(eventIdInput);
 
-            if (startTime && endTime && startTime.value && endTime.value) {
-                if (startTime.value >= endTime.value) {
-                    e.preventDefault();
-                    alert('Start time must be before end time.');
-                    return false;
+                const roleSelects = document.querySelectorAll('#participantsTableBody select[name="roles[]"]');
+                const rows = document.querySelectorAll('#participantsTableBody tr');
+
+                roleSelects.forEach((select, i) => {
+                    const personIdInput = document.createElement('input');
+                    personIdInput.type = 'hidden';
+                    personIdInput.name = 'person_ids[]';
+                    personIdInput.value = data[i].person_id; // Assuming data is accessible from the initial fetch
+                    form.appendChild(personIdInput);
+
+                    const roleInput = document.createElement('input');
+                    roleInput.type = 'hidden';
+                    roleInput.name = 'roles[]';
+                    roleInput.value = select.value;
+                    form.appendChild(roleInput);
+                });
+
+                if (roleSelects.length === 0) {
+                    alert('No participants available to update roles.');
+                    return;
                 }
-            }
 
-            if (eventDate && eventDate.value) {
-                const selectedDate = new Date(eventDate.value);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
 
-                if (selectedDate < today) {
-                    e.preventDefault();
-                    alert('Event date must be in the future.');
-                    return false;
+        // Form validation for event creation and editing
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const startTime = this.querySelector('input[name="start_time"]');
+                const endTime = this.querySelector('input[name="end_time"]');
+                const eventDate = this.querySelector('input[name="event_date"]');
+
+                if (startTime && endTime && startTime.value && endTime.value) {
+                    if (startTime.value >= endTime.value) {
+                        e.preventDefault();
+                        alert('Start time must be before end time.');
+                        return false;
+                    }
                 }
-            }
+
+                if (eventDate && eventDate.value) {
+                    const selectedDate = new Date(eventDate.value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    if (selectedDate < today) {
+                        e.preventDefault();
+                        alert('Event date must be in the future.');
+                        return false;
+                    }
+                }
+            });
         });
-    });
 
-    // Auto-refresh registration status every 30 seconds for upcoming events
-    if (document.querySelector('#upcoming .event-card')) {
-        setInterval(function() {
-            // Only refresh if user is logged in and viewing upcoming events
-            const upcomingTab = document.querySelector('#upcoming-tab');
-            if (upcomingTab && upcomingTab.classList.contains('active')) {
-                // You can implement AJAX refresh here if needed
-                console.log('Auto-refresh check for registration updates');
-            }
-        }, 30000);
-    }
+        // Auto-refresh registration status every 30 seconds for upcoming events
+        if (document.querySelector('#upcoming .event-card')) {
+            setInterval(function() {
+                // Only refresh if user is logged in and viewing upcoming events
+                const upcomingTab = document.querySelector('#upcoming-tab');
+                if (upcomingTab && upcomingTab.classList.contains('active')) {
+                    // You can implement AJAX refresh here if needed
+                    console.log('Auto-refresh check for registration updates');
+                }
+            }, 30000);
+        }
 
-    // Enhanced feedback character counter
-    const feedbackTextarea = document.getElementById('feedback');
-    if (feedbackTextarea) {
-        const charCountDiv = document.createElement('div');
-        charCountDiv.className = 'form-text';
-        charCountDiv.id = 'charCount';
-        feedbackTextarea.parentNode.insertBefore(charCountDiv, feedbackTextarea.nextSibling);
+        // Enhanced feedback character counter
+        const feedbackTextarea = document.getElementById('feedback');
+        if (feedbackTextarea) {
+            const charCountDiv = document.createElement('div');
+            charCountDiv.className = 'form-text';
+            charCountDiv.id = 'charCount';
+            feedbackTextarea.parentNode.insertBefore(charCountDiv, feedbackTextarea.nextSibling);
 
-        feedbackTextarea.addEventListener('input', function() {
-            const count = this.value.length;
-            const countDiv = document.getElementById('charCount');
-            countDiv.textContent = `${count} characters (minimum 10 required)`;
-            countDiv.className = count >= 10 ? 'form-text text-success' : 'form-text text-warning';
+            feedbackTextarea.addEventListener('input', function() {
+                const count = this.value.length;
+                const countDiv = document.getElementById('charCount');
+                countDiv.textContent = `${count} characters (minimum 10 required)`;
+                countDiv.className = count >= 10 ? 'form-text text-success' : 'form-text text-warning';
+            });
+        }
+
+        // Tooltip initialization for truncated feedback text
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-    }
 
-    // Tooltip initialization for truncated feedback text
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+        // Handle View All Feedback Modal
+        const viewAllFeedbackModal = document.getElementById('viewAllFeedbackModal');
+        if (viewAllFeedbackModal) {
+            viewAllFeedbackModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const eventId = button.getAttribute('data-event-id');
+                const eventTitle = button.getAttribute('data-event-title');
+                const modal = this;
+                const feedbackContent = modal.querySelector('#feedbackContent');
 
-    // Handle View All Feedback Modal
-    const viewAllFeedbackModal = document.getElementById('viewAllFeedbackModal');
-    if (viewAllFeedbackModal) {
-        viewAllFeedbackModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const eventId = button.getAttribute('data-event-id');
-            const eventTitle = button.getAttribute('data-event-title');
-            const modal = this;
-            const feedbackContent = modal.querySelector('#feedbackContent');
+                // Update modal title
+                modal.querySelector('#viewAllFeedbackModalLabel').textContent = `Feedback for "${eventTitle}"`;
 
-            // Update modal title
-            modal.querySelector('#viewAllFeedbackModalLabel').textContent = `Feedback for "${eventTitle}"`;
-
-            // Show loading indicator
-            feedbackContent.innerHTML = `
+                // Show loading indicator
+                feedbackContent.innerHTML = `
                 <div class="text-center py-4">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -1971,37 +2037,39 @@ foreach ($events as $event) {
                 </div>
             `;
 
-            // Fetch feedback via AJAX
-            fetch('events.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `action=fetch_all_feedback&event_id=${eventId}`
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        feedbackContent.innerHTML = `
+                // Fetch feedback via AJAX
+                fetch('events.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `action=fetch_all_feedback&event_id=${eventId}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            feedbackContent.innerHTML = `
                             <div class="alert alert-danger" role="alert">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
                                 ${data.error}
                             </div>
                         `;
-                        return;
-                    }
+                            return;
+                        }
 
-                    if (!data.success || data.feedback.length === 0) {
-                        feedbackContent.innerHTML = `
+                        if (!data.success || data.feedback.length === 0) {
+                            feedbackContent.innerHTML = `
                             <div class="text-center py-5">
                                 <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
                                 <h5 class="text-muted">No Feedback Yet</h5>
                                 <p class="text-muted">No participants have submitted feedback for this event yet.</p>
                             </div>
                         `;
-                        return;
-                    }
+                            return;
+                        }
 
-                    // Process and display feedback
-                    let feedbackHtml = `
+                        // Process and display feedback
+                        let feedbackHtml = `
                         <div class="row mb-3">
                             <div class="col-12">
                                 <div class="alert alert-info">
@@ -2012,18 +2080,18 @@ foreach ($events as $event) {
                         </div>
                     `;
 
-                    data.feedback.forEach((item, index) => {
-                        const badgeClass = item.user_status === 'Alumni' ? 'bg-primary' : 'bg-success';
-                        const roleBadgeClass = {
-                            'Organizer': 'bg-danger',
-                            'Speaker': 'bg-success',
-                            'Volunteer': 'bg-info',
-                            'Sponsor': 'bg-warning text-dark',
-                            'Attendee': 'bg-secondary'
-                        }[item.role] || 'bg-secondary';
-                        const feedbackText = item.feedback.replace(/\n/g, '<br>');
+                        data.feedback.forEach((item, index) => {
+                            const badgeClass = item.user_status === 'Alumni' ? 'bg-primary' : 'bg-success';
+                            const roleBadgeClass = {
+                                'Organizer': 'bg-danger',
+                                'Speaker': 'bg-success',
+                                'Volunteer': 'bg-info',
+                                'Sponsor': 'bg-warning text-dark',
+                                'Attendee': 'bg-secondary'
+                            } [item.role] || 'bg-secondary';
+                            const feedbackText = item.feedback.replace(/\n/g, '<br>');
 
-                        feedbackHtml += `
+                            feedbackHtml += `
                             <div class="card mb-3">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <div>
@@ -2037,22 +2105,23 @@ foreach ($events as $event) {
                                 </div>
                             </div>
                         `;
-                    });
+                        });
 
-                    feedbackContent.innerHTML = feedbackHtml;
-                })
-                .catch(error => {
-                    console.error('Error fetching feedback:', error);
-                    feedbackContent.innerHTML = `
+                        feedbackContent.innerHTML = feedbackHtml;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching feedback:', error);
+                        feedbackContent.innerHTML = `
                         <div class="alert alert-danger" role="alert">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             Error loading feedback. Please try again later.
                         </div>
                     `;
-                });
-        });
-    }
-</script>
+                    });
+            });
+        }
+    </script>
 </body>
+
 </html>
 //completed

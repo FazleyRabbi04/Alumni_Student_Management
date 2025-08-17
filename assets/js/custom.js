@@ -7,7 +7,7 @@ let currentUser = null;
 let notifications = [];
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeApp();
 });
 
@@ -42,7 +42,7 @@ function initializeApp() {
  */
 function initializeTooltips() {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 }
@@ -54,8 +54,8 @@ function initializeFormValidations() {
     // Custom validation for all forms
     const forms = document.querySelectorAll('.needs-validation');
 
-    Array.prototype.slice.call(forms).forEach(function(form) {
-        form.addEventListener('submit', function(event) {
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -67,11 +67,11 @@ function initializeFormValidations() {
     // Real-time validation feedback
     const inputs = document.querySelectorAll('input, textarea, select');
     inputs.forEach(input => {
-        input.addEventListener('blur', function() {
+        input.addEventListener('blur', function () {
             validateField(this);
         });
 
-        input.addEventListener('input', function() {
+        input.addEventListener('input', function () {
             if (this.classList.contains('is-invalid')) {
                 validateField(this);
             }
@@ -155,7 +155,7 @@ function showNotification(message, type = 'info') {
     bsToast.show();
 
     // Remove toast element after it's hidden
-    toast.addEventListener('hidden.bs.toast', function() {
+    toast.addEventListener('hidden.bs.toast', function () {
         toast.remove();
     });
 }
@@ -198,7 +198,7 @@ function initializeSearch() {
     searchInputs.forEach(input => {
         let searchTimeout;
 
-        input.addEventListener('input', function() {
+        input.addEventListener('input', function () {
             clearTimeout(searchTimeout);
             const query = this.value.trim();
 
@@ -281,7 +281,7 @@ function initializeSmoothScrolling() {
     const links = document.querySelectorAll('a[href^="#"]');
 
     links.forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
             const targetId = this.getAttribute('href');
             if (targetId === '#') return;
 
@@ -355,7 +355,7 @@ function debounce(func, wait, immediate) {
         const context = this;
         const args = arguments;
 
-        const later = function() {
+        const later = function () {
             timeout = null;
             if (!immediate) func.apply(context, args);
         };
@@ -373,7 +373,7 @@ function debounce(func, wait, immediate) {
  */
 function throttle(func, limit) {
     let inThrottle;
-    return function() {
+    return function () {
         const args = arguments;
         const context = this;
         if (!inThrottle) {

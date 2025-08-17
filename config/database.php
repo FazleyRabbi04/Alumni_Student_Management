@@ -7,13 +7,14 @@ class Database
     private $password = '';
     public $conn;
 
-    public function getConnection() {
+    public function getConnection()
+    {
         $this->conn = null;
         try {
             $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
             $this->conn->exec("set names utf8");
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch(PDOException $exception) {
+        } catch (PDOException $exception) {
             echo "Connection error: " . $exception->getMessage();
         }
         return $this->conn;
@@ -21,13 +22,15 @@ class Database
 }
 
 // Add this function to match mentorship.php's requirements
-function getDatabaseConnection() {
+function getDatabaseConnection()
+{
     $database = new Database();
     return $database->getConnection();
 }
 
 // Database utility functions
-function executeQuery($query, $params = []) {
+function executeQuery($query, $params = [])
+{
     $database = new Database();
     $db = $database->getConnection();
 
@@ -35,13 +38,14 @@ function executeQuery($query, $params = []) {
         $stmt = $db->prepare($query);
         $stmt->execute($params);
         return $stmt;
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         error_log("Database query error: " . $e->getMessage());
         return false;
     }
 }
 
-function db(): PDO {
+function db(): PDO
+{
     static $pdoInstance = null;
     if ($pdoInstance instanceof PDO) {
         return $pdoInstance;
@@ -51,32 +55,37 @@ function db(): PDO {
     return $pdoInstance;
 }
 
-function getLastInsertId() {
+function getLastInsertId()
+{
     $database = new Database();
     $db = $database->getConnection();
     return $db->lastInsertId();
 }
 
 // Session management
-function startSecureSession() {
+function startSecureSession()
+{
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
     }
 }
 
-function isLoggedIn() {
+function isLoggedIn()
+{
     startSecureSession();
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
-function requireLogin() {
+function requireLogin()
+{
     if (!isLoggedIn()) {
         header('Location: /alumni-network/auth/signin.php');
         exit();
     }
 }
 
-function getUserInfo($user_id) {
+function getUserInfo($user_id)
+{
     $query = "
         SELECT 
             p.*, 
@@ -92,7 +101,8 @@ function getUserInfo($user_id) {
     return $stmt && $stmt->rowCount() > 0 ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 }
 
-function authenticateUser($email, $password) {
+function authenticateUser($email, $password)
+{
     try {
         // First, get the person_id from email_address table
         $email_query = "SELECT person_id FROM email_address WHERE email = ?";
@@ -128,15 +138,18 @@ function authenticateUser($email, $password) {
 }
 
 // Additional helper functions
-function sanitizeInput($input) {
+function sanitizeInput($input)
+{
     return htmlspecialchars(strip_tags(trim($input)));
 }
 
-function generateRandomString($length = 10) {
+function generateRandomString($length = 10)
+{
     return bin2hex(random_bytes($length / 2));
 }
 
-function logActivity($user_id, $activity, $details = '') {
+function logActivity($user_id, $activity, $details = '')
+{
     try {
         $query = "INSERT INTO activity_log (user_id, activity, details, created_at) VALUES (?, ?, ?, NOW())";
         executeQuery($query, [$user_id, $activity, $details]);
@@ -144,4 +157,3 @@ function logActivity($user_id, $activity, $details = '') {
         error_log("Activity logging error: " . $e->getMessage());
     }
 }
-?>

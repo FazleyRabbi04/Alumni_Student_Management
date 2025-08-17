@@ -10,6 +10,7 @@ if (isLoggedIn()) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -124,170 +125,177 @@ if (isLoggedIn()) {
         }
     </style>
 </head>
+
 <body>
 
-<!-- Header -->
-<header>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-navy">
-        <div class="container-fluid px-4">
-            <a class="navbar-brand" href="home.php">Alumni Relationship & Networking System</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="home.php">Home</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="eventsDropdown" role="button" data-bs-toggle="dropdown">Register</a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="auth/signup.php">Sign Up</a></li>
-                            <li><a class="dropdown-item" href="auth/signin.php">Sign In</a></li>
-                        </ul>
-                    </li>
-                </ul>
+    <!-- Header -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-navy">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand" href="home.php">Alumni Relationship & Networking System</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="home.php">Home</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="eventsDropdown" role="button" data-bs-toggle="dropdown">Register</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="auth/signup.php">Sign Up</a></li>
+                                <li><a class="dropdown-item" href="auth/signin.php">Sign In</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" data-aos="fade-up">
+        <div class="container">
+            <h1 class="display-4">Welcome to Alumni Relationship & Networking System</h1>
+            <p class="lead">Connect, engage, and grow with our community.</p>
+            <button class="btn" id="viewEventsBtn">View Upcoming Events</button>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features py-5" id="features">
+        <div class="container">
+            <h2 class="section-title text-center text-navy" data-aos="fade-up">Key Features</h2>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                <div class="col" data-aos="zoom-in">
+                    <div class="feature-card h-100">
+                        <h5 class="card-title">Profiles</h5>
+                        <p>Access detailed profiles including education, employment, and achievements.</p>
+                    </div>
+                </div>
+                <div class="col" data-aos="zoom-in" data-aos-delay="100">
+                    <div class="feature-card h-100">
+                        <h5 class="card-title">Events & Participation</h5>
+                        <p>Register for events and provide feedback.</p>
+                    </div>
+                </div>
+                <div class="col" data-aos="zoom-in" data-aos-delay="200">
+                    <div class="feature-card h-100">
+                        <h5 class="card-title">Mentorship Programs</h5>
+                        <p>Connect with mentors for career guidance.</p>
+                    </div>
+                </div>
+                <div class="col" data-aos="zoom-in" data-aos-delay="300">
+                    <div class="feature-card h-100">
+                        <h5 class="card-title">Career Opportunities</h5>
+                        <p>Explore job and internship listings.</p>
+                    </div>
+                </div>
+                <div class="col" data-aos="zoom-in" data-aos-delay="400">
+                    <div class="feature-card h-100">
+                        <h5 class="card-title">Admin Tools</h5>
+                        <p>Manage communications and generate reports.</p>
+                    </div>
+                </div>
+                <div class="col" data-aos="zoom-in" data-aos-delay="500">
+                    <div class="feature-card h-100">
+                        <h5 class="card-title">Future Enhancements</h5>
+                        <p>Mobile app, analytics, and AI recommendations.</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </nav>
-</header>
+    </section>
 
-<!-- Hero Section -->
-<section class="hero" data-aos="fade-up">
-    <div class="container">
-        <h1 class="display-4">Welcome to Alumni Relationship & Networking System</h1>
-        <p class="lead">Connect, engage, and grow with our community.</p>
-        <button class="btn" id="viewEventsBtn">View Upcoming Events</button>
-    </div>
-</section>
+    <!-- Upcoming Events Section -->
+    <section id="events" class="py-5">
+        <div class="container">
+            <h2 class="section-title text-center text-navy" data-aos="fade-up">Upcoming Events</h2>
+            <?php
+            require_once 'config/database.php';
+            $database = new Database();
+            $conn = $database->getConnection();
 
-<!-- Features Section -->
-<section class="features py-5" id="features">
-    <div class="container">
-        <h2 class="section-title text-center text-navy" data-aos="fade-up">Key Features</h2>
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            <div class="col" data-aos="zoom-in">
-                <div class="feature-card h-100">
-                    <h5 class="card-title">Profiles</h5>
-                    <p>Access detailed profiles including education, employment, and achievements.</p>
-                </div>
-            </div>
-            <div class="col" data-aos="zoom-in" data-aos-delay="100">
-                <div class="feature-card h-100">
-                    <h5 class="card-title">Events & Participation</h5>
-                    <p>Register for events and provide feedback.</p>
-                </div>
-            </div>
-            <div class="col" data-aos="zoom-in" data-aos-delay="200">
-                <div class="feature-card h-100">
-                    <h5 class="card-title">Mentorship Programs</h5>
-                    <p>Connect with mentors for career guidance.</p>
-                </div>
-            </div>
-            <div class="col" data-aos="zoom-in" data-aos-delay="300">
-                <div class="feature-card h-100">
-                    <h5 class="card-title">Career Opportunities</h5>
-                    <p>Explore job and internship listings.</p>
-                </div>
-            </div>
-            <div class="col" data-aos="zoom-in" data-aos-delay="400">
-                <div class="feature-card h-100">
-                    <h5 class="card-title">Admin Tools</h5>
-                    <p>Manage communications and generate reports.</p>
-                </div>
-            </div>
-            <div class="col" data-aos="zoom-in" data-aos-delay="500">
-                <div class="feature-card h-100">
-                    <h5 class="card-title">Future Enhancements</h5>
-                    <p>Mobile app, analytics, and AI recommendations.</p>
-                </div>
-            </div>
+            $events = [];
+            try {
+                $stmt = $conn->prepare("SELECT * FROM events WHERE event_date >= CURDATE() ORDER BY event_date ASC LIMIT 3");
+                $stmt->execute();
+                $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Exception $e) {
+                error_log("Error fetching events: " . $e->getMessage());
+            }
+            ?>
+
+            <ul class="list-group" data-aos="fade-up" data-aos-delay="100">
+                <?php if (empty($events)): ?>
+                    <li class="list-group-item">No upcoming events found.</li>
+                <?php else: ?>
+                    <?php foreach ($events as $event): ?>
+                        <li class="list-group-item">
+                            <strong><?= htmlspecialchars($event['event_title']) ?></strong><br>
+                            <small><?= date('F j, Y', strtotime($event['event_date'])) ?> | <?= date('h:i A', strtotime($event['start_time'])) ?> - <?= date('h:i A', strtotime($event['end_time'])) ?></small><br>
+                            <em><?= htmlspecialchars($event['venue']) ?>, <?= htmlspecialchars($event['city']) ?></em>
+                        </li>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </ul>
+
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- Upcoming Events Section -->
-<section id="events" class="py-5">
-    <div class="container">
-        <h2 class="section-title text-center text-navy" data-aos="fade-up">Upcoming Events</h2>
-        <?php
-require_once 'config/database.php';
-$database = new Database();
-$conn = $database->getConnection();
-
-$events = [];
-try {
-    $stmt = $conn->prepare("SELECT * FROM events WHERE event_date >= CURDATE() ORDER BY event_date ASC LIMIT 3");
-    $stmt->execute();
-    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    error_log("Error fetching events: " . $e->getMessage());
-}
-?>
-
-<ul class="list-group" data-aos="fade-up" data-aos-delay="100">
-    <?php if (empty($events)): ?>
-        <li class="list-group-item">No upcoming events found.</li>
-    <?php else: ?>
-        <?php foreach ($events as $event): ?>
-            <li class="list-group-item">
-                <strong><?= htmlspecialchars($event['event_title']) ?></strong><br>
-                <small><?= date('F j, Y', strtotime($event['event_date'])) ?> | <?= date('h:i A', strtotime($event['start_time'])) ?> - <?= date('h:i A', strtotime($event['end_time'])) ?></small><br>
-                <em><?= htmlspecialchars($event['venue']) ?>, <?= htmlspecialchars($event['city']) ?></em>
-            </li>
-        <?php endforeach; ?>
-    <?php endif; ?>
-</ul>
-
-    </div>
-</section>
-
-<footer class="footer">
-    <div class="container">
-        &copy; 2025 ABC University. All rights reserved.
-    </div>
-</footer>
+    <footer class="footer">
+        <div class="container">
+            &copy; 2025 ABC University. All rights reserved.
+        </div>
+    </footer>
 
 
-<!-- JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-<script>
-    AOS.init({ duration: 1000, once: true });
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 1000,
+            once: true
+        });
 
-    
 
-    function loadEvents() {
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(events => {
-                const eventList = document.getElementById('eventList');
-                eventList.innerHTML = '';
 
-                if (!events.length) {
-                    eventList.innerHTML = '<li class="list-group-item">No upcoming events found.</li>';
-                    return;
-                }
+        function loadEvents() {
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(events => {
+                    const eventList = document.getElementById('eventList');
+                    eventList.innerHTML = '';
 
-                events.forEach(event => {
-                    const eventDate = new Date(event.date).toLocaleDateString();
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item';
-                    li.innerHTML = `<strong>${event.title}</strong> - ${eventDate}<br>${event.description}<br><em>Location: ${event.location}</em>`;
-                    eventList.appendChild(li);
+                    if (!events.length) {
+                        eventList.innerHTML = '<li class="list-group-item">No upcoming events found.</li>';
+                        return;
+                    }
+
+                    events.forEach(event => {
+                        const eventDate = new Date(event.date).toLocaleDateString();
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item';
+                        li.innerHTML = `<strong>${event.title}</strong> - ${eventDate}<br>${event.description}<br><em>Location: ${event.location}</em>`;
+                        eventList.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error loading events:', err);
+                    const eventList = document.getElementById('eventList');
+                    eventList.innerHTML = '<li class="list-group-item text-danger">Failed to load events.</li>';
                 });
-            })
-            .catch(err => {
-                console.error('Error loading events:', err);
-                const eventList = document.getElementById('eventList');
-                eventList.innerHTML = '<li class="list-group-item text-danger">Failed to load events.</li>';
-            });
-    }
+        }
 
-    window.addEventListener('load', loadEvents);
-    document.getElementById('viewEventsBtn').addEventListener('click', () => {
-        document.getElementById('events').scrollIntoView({ behavior: 'smooth' });
-    });
-</script>
+        window.addEventListener('load', loadEvents);
+        document.getElementById('viewEventsBtn').addEventListener('click', () => {
+            document.getElementById('events').scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    </script>
 </body>
+
 </html>
