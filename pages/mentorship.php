@@ -1293,6 +1293,7 @@ try {
                         <div class="mb-3">
                             <label for="mode" class="form-label">Mode</label>
                             <select class="form-select" id="mode" name="mode" required>
+                                <option value=" ">Select Mode</option>
                                 <option value="Online">Online</option>
                                 <option value="Offline">Offline</option>
                                 <option value="Hybrid">Hybrid</option>
