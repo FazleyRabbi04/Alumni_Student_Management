@@ -129,28 +129,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw_job'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_app_status'])) {
   $job_id    = (int)($_POST['job_id'] ?? 0);
   $applicant = (int)($_POST['applicant_id'] ?? 0);
-  $decision  = $_POST['decision'] ?? ''; // 'accept' | 'reject'
+  $decision  = $_POST['decision'] ?? '';
   $role      = trim($_POST['role'] ?? '');
 
   if ($job_id && $applicant && in_array($decision, ['accept', 'reject'], true)) {
     $own = executeQuery("SELECT 1 FROM job WHERE job_id=? AND person_id=?", [$job_id, $user_id]);
     if ($own && $own->rowCount()) {
       $status = ($decision === 'accept') ? 'accepted' : 'rejected';
-      $ok = executeQuery(
-        "UPDATE applies SET status=?, role=IF(?='', role, ?) WHERE person_id=? AND job_id=?",
+
+      // Do the update and verify a row changed
+      $stmt = executeQuery(
+        "UPDATE applies
+            SET status=?,
+                `role` = IF(?='', `role`, ?)
+          WHERE person_id=? AND job_id=?",
         [$status, $role, $role, $applicant, $job_id]
       );
-      if ($ok) {
+
+      // If executeQuery returns PDOStatement, check rowCount
+      $changed = ($stmt instanceof PDOStatement) ? $stmt->rowCount() : (bool)$stmt;
+
+      if ($changed) {
         $message = "Application has been {$status}."
           . (($status === 'accepted' && $role !== '') ? " Role set to '{$role}'." : '');
       } else {
-        $error = "Failed to update application.";
+        // No row matched → wrong applicant_id/job_id was posted
+        $error = "No application row was updated. Please refresh and try again.";
       }
     } else {
       $error = "Unauthorized: Only the job owner can take action.";
     }
+  } else {
+    $error = "Invalid request.";
   }
 }
+
+
 
 /* ----------------------- DATA FOR PAGE ----------------------- */
 
@@ -642,11 +656,17 @@ if ($is_student) {
                                             <form method="POST" class="d-flex gap-2 flex-wrap align-items-center">
                                               <input type="hidden" name="job_id" value="<?= $jid ?>">
                                               <input type="hidden" name="applicant_id" value="<?= (int)$r['person_id'] ?>">
-                                              <input type="hidden" name="decision" value="">
-                                              <input type="text" name="role" class="form-control form-control-sm" placeholder="Role (optional)" value="<?= htmlspecialchars($r['role'] ?? '') ?>" style="max-width: 160px;">
-                                              <button class="btn btn-sm btn-success" name="update_app_status" value="1" onclick="this.form.decision.value='accept'">Accept</button>
-                                              <button class="btn btn-sm btn-danger" name="update_app_status" value="1" onclick="this.form.decision.value='reject'">Reject</button>
+                                              <input type="hidden" name="update_app_status" value="1">
+
+                                              <input type="text" name="role" class="form-control form-control-sm"
+                                                placeholder="Role (optional)"
+                                                value="<?= htmlspecialchars($r['role'] ?? '') ?>" style="max-width:160px;">
+
+                                              <button type="submit" class="btn btn-sm btn-success" name="decision" value="accept">Accept</button>
+                                              <button type="submit" class="btn btn-sm btn-danger" name="decision" value="reject">Reject</button>
                                             </form>
+
+
                                           </td>
                                         </tr>
                                       <?php endforeach; ?>
