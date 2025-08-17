@@ -803,22 +803,27 @@ if ($user_info) {
                                     </select>
                                 </div>
                             </div>
-                            <?php if ($user_type === 'Student'): ?>
-                                <div class="edit-section">
-                                    <h6>Shift Role to Alumni</h6>
-                                    <div class="mb-3">
-                                        <label class="form-label">Role</label>
-                                        <select class="form-select" name="shift_role">
-                                            <option value="">Stay as Student</option>
-                                            <option value="Alumni">Shift to Alumni</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3" style="display: none;">
-                                        <label class="form-label">Graduation Year</label>
-                                        <input type="text" class="form-control" name="grad_year" placeholder="e.g., 2023">
-                                    </div>
-                                </div>
-                            <?php endif; ?>
+                <?php if ($user_type === 'Student'): ?>
+            <div class="edit-section">
+                <h6>Shift Role to Alumni</h6>
+                <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select class="form-select" name="shift_role">
+                <option value="">Stay as Student</option>
+                <option value="Alumni">Shift to Alumni</option>
+            </select>
+        </div>
+        <div class="mb-3 grad-year-field" style="display: none;">
+            <label class="form-label">Graduation Year</label>
+            <input type="text" class="form-control" name="grad_year" placeholder="e.g., 2023">
+        </div>
+        <!-- Save button just for role shifting -->
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-save me-1"></i> Save Role Change
+        </button>
+    </div>
+<?php endif; ?>
+
                             </form>
                     <?php else: ?>
                         <div class="row">
