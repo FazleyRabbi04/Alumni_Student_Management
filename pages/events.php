@@ -731,31 +731,6 @@ foreach ($events as $event) {
             transform: translateY(-4px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
         }
-        .footer {
-            background-color: #002147;
-            color: #fff;
-            padding: 40px 0;
-            font-size: 0.95rem;
-        }
-        .footer a {
-            color: #aad4ff;
-            text-decoration: none;
-            margin: 0 10px;
-            transition: color 0.3s;
-        }
-        .footer a:hover {
-            color: #ffffff;
-        }
-        .social-icons img {
-            margin: 0 6px;
-            width: 24px;
-            height: 24px;
-            filter: grayscale(100%);
-            transition: filter 0.3s;
-        }
-        .social-icons img:hover {
-            filter: grayscale(0%);
-        }
         .filter-form {
             margin-bottom: 2rem;
         }
@@ -1469,7 +1444,6 @@ foreach ($events as $event) {
                             <th>Phone</th>
                             <th>Email</th>
                             <th>Registration Status</th>
-                            <th>Feedback</th>
                             <th>Select</th>
                         </tr>
                         </thead>
@@ -1507,7 +1481,6 @@ foreach ($events as $event) {
                             <th>Phone</th>
                             <th>Email</th>
                             <th>Registration Status</th>
-                            <th>Feedback</th>
                             <th>Select</th>
                         </tr>
                         </thead>
@@ -1580,7 +1553,6 @@ foreach ($events as $event) {
             modal.querySelector('#feedback_event_id').value = eventId;
             modal.querySelector('#feedback_event_title').textContent = eventTitle;
             modal.querySelector('#feedback').value = currentFeedback || '';
-
         });
 
         // Enhanced feedback form validation
@@ -1646,17 +1618,13 @@ foreach ($events as $event) {
                     const tableBody = document.getElementById('registrantsTableBody');
                     tableBody.innerHTML = '';
                     if (data.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No registrants found.</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No registrants found.</td></tr>';
                     } else {
                         data.forEach(reg => {
                             const row = document.createElement('tr');
                             const roleOptions = ['Attendee', 'Organizer', 'Speaker', 'Volunteer', 'Sponsor']
                                 .map(role => `<option value="${role}" ${reg.role === role ? 'selected' : ''}>${role}</option>`)
                                 .join('');
-
-                            const feedbackDisplay = reg.feedback ?
-                                `<small class="text-truncate d-inline-block" style="max-width: 150px;" title="${reg.feedback}">${reg.feedback}</small>` :
-                                '<small class="text-muted">No feedback</small>';
 
                             row.innerHTML = `
                                 <td>${reg.full_name} (${reg.user_status})</td>
@@ -1669,7 +1637,6 @@ foreach ($events as $event) {
                                 <td>${reg.primary_phone || 'N/A'}</td>
                                 <td>${reg.primary_email || 'N/A'}</td>
                                 <td><span class="badge bg-${reg.response_status === 'Confirmed' ? 'success' : (reg.response_status === 'Pending' ? 'warning' : 'danger')}">${reg.response_status}</span></td>
-                                <td>${feedbackDisplay}</td>
                                 <td>
                                     ${reg.response_status === 'Pending' || reg.response_status === 'Confirmed' ?
                                 `<input type="checkbox" name="person_ids[]" value="${reg.person_id}" data-user-status="${reg.user_status}" data-response-status="${reg.response_status}">` :
@@ -1700,7 +1667,7 @@ foreach ($events as $event) {
                 })
                 .catch(error => {
                     console.error('Error fetching registrants:', error);
-                    document.getElementById('registrantsTableBody').innerHTML = '<tr><td colspan="8" class="text-center">Error loading registrants.</td></tr>';
+                    document.getElementById('registrantsTableBody').innerHTML = '<tr><td colspan="7" class="text-center">Error loading registrants.</td></tr>';
                 });
         });
     }
@@ -1828,10 +1795,6 @@ foreach ($events as $event) {
                                 .map(role => `<option value="${role}" ${reg.role === role ? 'selected' : ''}>${role}</option>`)
                                 .join('');
 
-                            const feedbackDisplay = reg.feedback ?
-                                `<small class="text-truncate d-inline-block" style="max-width: 150px;" title="${reg.feedback}">${reg.feedback}</small>` :
-                                '<small class="text-muted">No feedback</small>';
-
                             row.innerHTML = `
                                 <td>${reg.full_name} (${reg.user_status})</td>
                                 <td>${reg.user_status}</td>
@@ -1843,7 +1806,6 @@ foreach ($events as $event) {
                                 <td>${reg.primary_phone || 'N/A'}</td>
                                 <td>${reg.primary_email || 'N/A'}</td>
                                 <td><span class="badge bg-${reg.response_status === 'Confirmed' ? 'success' : (reg.response_status === 'Pending' ? 'warning' : 'danger')}">${reg.response_status}</span></td>
-                                <td>${feedbackDisplay}</td>
                                 <td>
                                     <input type="checkbox" name="person_ids[]" value="${reg.person_id}" data-user-status="${reg.user_status}">
                                 </td>
@@ -1853,23 +1815,24 @@ foreach ($events as $event) {
                     }
                 })
                 .then(() => {
-                    // Enable/disable save button based on checkbox state
-                    const checkboxes = document.querySelectorAll('#participantsTableBody input[name="person_ids[]"]');
+                    // Enable/disable save button based on role selection changes
+                    const roleSelects = document.querySelectorAll('#participantsTableBody select[name="roles[]"]');
                     const saveBtn = document.getElementById('saveRolesBtn');
 
                     const updateButtonState = () => {
-                        saveBtn.disabled = document.querySelectorAll('#participantsTableBody input[name="person_ids[]"]:checked').length === 0;
+                        const hasChanges = Array.from(roleSelects).some(select => select.value !== select.options[select.selectedIndex].defaultSelected);
+                        saveBtn.disabled = !hasChanges;
                     };
 
-                    checkboxes.forEach(checkbox => {
-                        checkbox.addEventListener('change', updateButtonState);
+                    roleSelects.forEach(select => {
+                        select.addEventListener('change', updateButtonState);
                     });
 
                     updateButtonState();
                 })
                 .catch(error => {
                     console.error('Error fetching participants:', error);
-                    document.getElementById('participantsTableBody').innerHTML = '<tr><td colspan="8" class="text-center">Error loading participants.</td></tr>';
+                    document.getElementById('participantsTableBody').innerHTML = '<tr><td colspan="6" class="text-center">Error loading participants.</td></tr>';
                 });
         });
     }
@@ -1895,27 +1858,25 @@ foreach ($events as $event) {
             eventIdInput.value = currentEventId;
             form.appendChild(eventIdInput);
 
-            const checkboxes = document.querySelectorAll('#participantsTableBody input[name="person_ids[]"]:checked');
+            const roleSelects = document.querySelectorAll('#participantsTableBody select[name="roles[]"]');
             const rows = document.querySelectorAll('#participantsTableBody tr');
-            const selectedIndices = Array.from(checkboxes).map(cb => Array.from(rows).findIndex(row => row.contains(cb)));
 
-            selectedIndices.forEach((rowIndex, i) => {
+            roleSelects.forEach((select, i) => {
                 const personIdInput = document.createElement('input');
                 personIdInput.type = 'hidden';
                 personIdInput.name = 'person_ids[]';
-                personIdInput.value = checkboxes[i].value;
+                personIdInput.value = data[i].person_id; // Assuming data is accessible from the initial fetch
                 form.appendChild(personIdInput);
 
                 const roleInput = document.createElement('input');
                 roleInput.type = 'hidden';
                 roleInput.name = 'roles[]';
-                const roleSelect = rows[rowIndex].querySelector('select[name="roles[]"]');
-                roleInput.value = roleSelect ? roleSelect.value : 'Attendee';
+                roleInput.value = select.value;
                 form.appendChild(roleInput);
             });
 
-            if (checkboxes.length === 0) {
-                alert('Please select at least one participant to update roles.');
+            if (roleSelects.length === 0) {
+                alert('No participants available to update roles.');
                 return;
             }
 
@@ -2002,13 +1963,13 @@ foreach ($events as $event) {
 
             // Show loading indicator
             feedbackContent.innerHTML = `
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading feedback...</p>
                 </div>
-                <p class="mt-2 text-muted">Loading feedback...</p>
-            </div>
-        `;
+            `;
 
             // Fetch feedback via AJAX
             fetch('events.php', {
@@ -2020,36 +1981,36 @@ foreach ($events as $event) {
                 .then(data => {
                     if (data.error) {
                         feedbackContent.innerHTML = `
-                    <div class="alert alert-danger" role="alert">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        ${data.error}
-                    </div>
-                `;
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                ${data.error}
+                            </div>
+                        `;
                         return;
                     }
 
                     if (!data.success || data.feedback.length === 0) {
                         feedbackContent.innerHTML = `
-                    <div class="text-center py-5">
-                        <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">No Feedback Yet</h5>
-                        <p class="text-muted">No participants have submitted feedback for this event yet.</p>
-                    </div>
-                `;
+                            <div class="text-center py-5">
+                                <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No Feedback Yet</h5>
+                                <p class="text-muted">No participants have submitted feedback for this event yet.</p>
+                            </div>
+                        `;
                         return;
                     }
 
                     // Process and display feedback
                     let feedbackHtml = `
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>${data.feedback.length}</strong> participant(s) have provided feedback for this event.
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>${data.feedback.length}</strong> participant(s) have provided feedback for this event.
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `;
+                    `;
 
                     data.feedback.forEach((item, index) => {
                         const badgeClass = item.user_status === 'Alumni' ? 'bg-primary' : 'bg-success';
@@ -2060,19 +2021,22 @@ foreach ($events as $event) {
                             'Sponsor': 'bg-warning text-dark',
                             'Attendee': 'bg-secondary'
                         }[item.role] || 'bg-secondary';
+                        const feedbackText = item.feedback.replace(/\n/g, '<br>');
 
                         feedbackHtml += `
-                    <div class="card mb-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${item.full_name}</strong>
-                                <span class="badge ${badgeClass} ms-2">${item.user_status}</span>
-                                <span class="badge ${roleBadgeClass} ms-1">${item.role}</span>
-                        <div class="card-body">
-                            <p class="card-text">${feedbackText.replace(/\n/g, '<br>')}</p>
-                        </div>
-                    </div>
-                `;
+                            <div class="card mb-3">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${item.full_name}</strong>
+                                        <span class="badge ${badgeClass} ms-2">${item.user_status}</span>
+                                        <span class="badge ${roleBadgeClass} ms-1">${item.role}</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">${feedbackText}</p>
+                                </div>
+                            </div>
+                        `;
                     });
 
                     feedbackContent.innerHTML = feedbackHtml;
@@ -2080,11 +2044,11 @@ foreach ($events as $event) {
                 .catch(error => {
                     console.error('Error fetching feedback:', error);
                     feedbackContent.innerHTML = `
-                <div class="alert alert-danger" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Error loading feedback. Please try again later.
-                </div>
-            `;
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error loading feedback. Please try again later.
+                        </div>
+                    `;
                 });
         });
     }
