@@ -1402,7 +1402,7 @@ if ($user_info) {
               </button>
             </div>
             <div class="form-text">
-              Must be at least 8 characters, include uppercase, lowercase, and a number.
+              Must be at least 8 characters.
             </div>
           </div>
 
