@@ -340,7 +340,7 @@ function formatDate(dateString, format = 'full') {
 }
 
 /**
- * Format number with comma
+ * Format number with commas
  */
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
