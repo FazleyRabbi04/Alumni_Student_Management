@@ -814,7 +814,7 @@ if ($user_info) {
             </div>
         </div>
     </div>
-
+    <!-- /container -->
     <div class="container mt-4">
         <?php if (!empty($error)): ?>
             <div class="alert alert-danger alert-dismissible fade show">
@@ -831,8 +831,9 @@ if ($user_info) {
         <?php endif; ?>
 
         <div class="row">
-            <!-- Personal Information -->
+            <!-- LEFT: main content -->
             <div class="col-lg-8">
+                <!-- Personal Information -->
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
@@ -863,6 +864,7 @@ if ($user_info) {
                                             value="<?php echo htmlspecialchars($user_info['last_name'] ?? ''); ?>" required>
                                     </div>
                                 </div>
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Gender</label>
@@ -878,6 +880,7 @@ if ($user_info) {
                                             value="<?php echo htmlspecialchars($user_info['date_of_birth'] ?? ''); ?>" required>
                                     </div>
                                 </div>
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Street</label>
@@ -890,6 +893,7 @@ if ($user_info) {
                                             value="<?php echo htmlspecialchars($user_info['city'] ?? ''); ?>">
                                     </div>
                                 </div>
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Zip Code</label>
@@ -927,6 +931,7 @@ if ($user_info) {
                                         </select>
                                     </div>
                                 </div>
+
                                 <?php if ($user_type === 'Student'): ?>
                                     <div class="edit-section">
                                         <h6>Shift Role to Alumni</h6>
@@ -937,17 +942,15 @@ if ($user_info) {
                                                 <option value="Alumni">Shift to Alumni</option>
                                             </select>
                                         </div>
-                                        <div class="mb-3 grad-year-field" style="display: none;">
+                                        <div class="mb-3 grad-year-field" style="display:none;">
                                             <label class="form-label">Graduation Year</label>
                                             <input type="text" class="form-control" name="grad_year" placeholder="e.g., 2023">
                                         </div>
-                                        <!-- Save button just for role shifting -->
                                         <button type="submit" class="btn btn-success">
                                             <i class="fas fa-save me-1"></i> Save Role Change
                                         </button>
                                     </div>
                                 <?php endif; ?>
-
                             </form>
                         <?php else: ?>
                             <div class="row">
@@ -1005,8 +1008,208 @@ if ($user_info) {
                         <?php endif; ?>
                     </div>
                 </div>
-            </div>
-            <!-- Quick Stats Sidebar -->
+
+                <!-- Skills -->
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Skills</h5>
+                        <?php if ($edit_mode): ?>
+                            <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addSkillModal">
+                                <i class="fas fa-plus me-1"></i>Add Skill
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($skills)): ?>
+                            <p class="text-muted text-center py-3">No skills added yet.</p>
+                        <?php else: ?>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($skills as $sk): ?>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-navy me-2"><?php echo htmlspecialchars($sk); ?></span>
+                                        <?php if ($edit_mode): ?>
+                                            <form method="POST" action="">
+                                                <input type="hidden" name="action" value="delete_skill">
+                                                <input type="hidden" name="skill_name" value="<?php echo htmlspecialchars($sk); ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Interests -->
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-heart me-2"></i>Interests</h5>
+                        <?php if ($edit_mode): ?>
+                            <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addInterestModal">
+                                <i class="fas fa-plus me-1"></i>Add Interest
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($interests)): ?>
+                            <p class="text-muted text-center py-3">No interests added yet.</p>
+                        <?php else: ?>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($interests as $in): ?>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-navy me-2"><?php echo htmlspecialchars($in['interest_name']); ?></span>
+                                        <?php if ($edit_mode): ?>
+                                            <form method="POST" action="">
+                                                <input type="hidden" name="action" value="delete_interest">
+                                                <input type="hidden" name="interest_id" value="<?php echo (int)$in['interest_id']; ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Education History -->
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Education History</h5>
+                        <?php if ($edit_mode): ?>
+                            <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addEducationModal">
+                                <i class="fas fa-plus me-1"></i>Add Education
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($education_history)): ?>
+                            <p class="text-muted text-center py-3">No education history added yet.</p>
+                        <?php else: ?>
+                            <?php foreach ($education_history as $edu): ?>
+                                <div class="border-start border-primary border-3 ps-3 mb-3 d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1"><?php echo htmlspecialchars($edu['degree']); ?></h6>
+                                        <p class="text-primary mb-1"><?php echo htmlspecialchars($edu['institution']); ?></p>
+                                        <small class="text-muted">
+                                            <?php echo date('M Y', strtotime($edu['start_date'])); ?> -
+                                            <?php echo $edu['end_date'] ? date('M Y', strtotime($edu['end_date'])) : 'Present'; ?>
+                                        </small>
+                                    </div>
+                                    <?php if ($edit_mode): ?>
+                                        <form method="POST" action="" class="ms-3">
+                                            <input type="hidden" name="action" value="delete_education">
+                                            <input type="hidden" name="degree" value="<?php echo htmlspecialchars($edu['degree']); ?>">
+                                            <input type="hidden" name="institution" value="<?php echo htmlspecialchars($edu['institution']); ?>">
+                                            <input type="hidden" name="start_date" value="<?php echo htmlspecialchars($edu['start_date']); ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete education"
+                                                onclick="return confirm('Delete this education record?');">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Employment History -->
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Employment History</h5>
+                        <?php if ($edit_mode): ?>
+                            <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addEmploymentModal">
+                                <i class="fas fa-plus me-1"></i>Add Employment
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($employment_history)): ?>
+                            <p class="text-muted text-center py-3">No employment history added yet.</p>
+                        <?php else: ?>
+                            <?php foreach ($employment_history as $emp): ?>
+                                <div class="border-start border-primary border-3 ps-3 mb-3 d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1"><?php echo htmlspecialchars($emp['job_title']); ?></h6>
+                                        <p class="text-primary mb-1"><?php echo htmlspecialchars($emp['company']); ?></p>
+                                        <?php if (!empty($emp['designation'])): ?>
+                                            <small class="d-block"><?php echo htmlspecialchars($emp['designation']); ?></small>
+                                        <?php endif; ?>
+                                        <small class="text-muted">
+                                            <?php echo date('M Y', strtotime($emp['start_date'])); ?> -
+                                            <?php echo $emp['end_date'] ? date('M Y', strtotime($emp['end_date'])) : 'Present'; ?>
+                                        </small>
+                                    </div>
+                                    <?php if ($edit_mode): ?>
+                                        <form method="POST" action="" class="ms-3">
+                                            <input type="hidden" name="action" value="delete_employment">
+                                            <input type="hidden" name="job_title" value="<?php echo htmlspecialchars($emp['job_title']); ?>">
+                                            <input type="hidden" name="company" value="<?php echo htmlspecialchars($emp['company']); ?>">
+                                            <input type="hidden" name="start_date" value="<?php echo htmlspecialchars($emp['start_date']); ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete employment"
+                                                onclick="return confirm('Delete this employment record?');">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Achievements -->
+                <div class="card mt-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Achievements</h5>
+                        <?php if ($edit_mode): ?>
+                            <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addAchievementModal">
+                                <i class="fas fa-plus me-1"></i>Add Achievement
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($achievements)): ?>
+                            <p class="text-muted text-center py-3">No achievements added yet.</p>
+                        <?php else: ?>
+                            <?php foreach ($achievements as $ach): ?>
+                                <div class="border-start border-primary border-3 ps-3 mb-3 d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1"><?php echo htmlspecialchars($ach['ach_title']); ?></h6>
+                                        <p class="text-primary mb-1"><?php echo htmlspecialchars($ach['organization'] ?? ''); ?></p>
+                                        <small class="text-muted">
+                                            <?php echo date('M d, Y', strtotime($ach['ach_date'])); ?>
+                                            <?php if (!empty($ach['type'])): ?> • <?php echo htmlspecialchars($ach['type']); ?><?php endif; ?>
+                                        </small>
+                                        <?php if (!empty($ach['description'])): ?>
+                                            <div class="mt-1"><?php echo nl2br(htmlspecialchars($ach['description'])); ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if ($edit_mode): ?>
+                                        <form method="POST" action="" class="ms-3">
+                                            <input type="hidden" name="action" value="delete_achievement">
+                                            <input type="hidden" name="ach_title" value="<?php echo htmlspecialchars($ach['ach_title']); ?>">
+                                            <input type="hidden" name="ach_date" value="<?php echo htmlspecialchars($ach['ach_date']); ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete achievement"
+                                                onclick="return confirm('Delete this achievement?');">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div><!-- /col-lg-8 -->
+
+            <!-- RIGHT: sidebar -->
             <div class="col-lg-4">
                 <div class="card">
                     <div class="card-header">
@@ -1026,7 +1229,7 @@ if ($user_info) {
                             <span class="badge bg-warning"><?php echo count($achievements); ?></span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Email Adressess:</span>
+                            <span>Email Addresses:</span>
                             <span class="badge bg-info"><?php echo count($emails); ?></span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
@@ -1049,7 +1252,7 @@ if ($user_info) {
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card mt-3">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Security</h5>
                     </div>
@@ -1063,213 +1266,10 @@ if ($user_info) {
                         </button>
                     </div>
                 </div>
-            </div>
-            <!-- Skills -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Skills</h5>
-                    <?php if ($edit_mode): ?>
-                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addSkillModal">
-                            <i class="fas fa-plus me-1"></i>Add Skill
-                        </button>
-                    <?php endif; ?>
-                </div>
-                <div class="card-body">
-                    <?php if (empty($skills)): ?>
-                        <p class="text-muted text-center py-3">No skills added yet.</p>
-                    <?php else: ?>
-                        <div class="d-flex flex-wrap gap-2">
-                            <?php foreach ($skills as $sk): ?>
-                                <div class="d-flex align-items-center">
-                                    <span class="badge bg-navy me-2"><?php echo htmlspecialchars($sk); ?></span>
-                                    <?php if ($edit_mode): ?>
-                                        <form method="POST" action="">
-                                            <input type="hidden" name="action" value="delete_skill">
-                                            <input type="hidden" name="skill_name" value="<?php echo htmlspecialchars($sk); ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Interests -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-heart me-2"></i>Interests</h5>
-                    <?php if ($edit_mode): ?>
-                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addInterestModal">
-                            <i class="fas fa-plus me-1"></i>Add Interest
-                        </button>
-                    <?php endif; ?>
-                </div>
-                <div class="card-body">
-                    <?php if (empty($interests)): ?>
-                        <p class="text-muted text-center py-3">No interests added yet.</p>
-                    <?php else: ?>
-                        <div class="d-flex flex-wrap gap-2">
-                            <?php foreach ($interests as $in): ?>
-                                <div class="d-flex align-items-center">
-                                    <span class="badge bg-navy me-2"><?php echo htmlspecialchars($in['interest_name']); ?></span>
-                                    <?php if ($edit_mode): ?>
-                                        <form method="POST" action="">
-                                            <input type="hidden" name="action" value="delete_interest">
-                                            <input type="hidden" name="interest_id" value="<?php echo (int)$in['interest_id']; ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Education History -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Education History</h5>
-                    <?php if ($edit_mode): ?>
-                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addEducationModal">
-                            <i class="fas fa-plus me-1"></i>Add Education
-                        </button>
-                    <?php endif; ?>
-                </div>
-                <div class="card-body">
-                    <?php if (empty($education_history)): ?>
-                        <p class="text-muted text-center py-3">No education history added yet.</p>
-                    <?php else: ?>
-                        <?php foreach ($education_history as $edu): ?>
-                            <div class="border-start border-primary border-3 ps-3 mb-3 d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1"><?php echo htmlspecialchars($edu['degree']); ?></h6>
-                                    <p class="text-primary mb-1"><?php echo htmlspecialchars($edu['institution']); ?></p>
-                                    <small class="text-muted">
-                                        <?php echo date('M Y', strtotime($edu['start_date'])); ?> -
-                                        <?php echo $edu['end_date'] ? date('M Y', strtotime($edu['end_date'])) : 'Present'; ?>
-                                    </small>
-                                </div>
-
-                                <?php if ($edit_mode): ?>
-                                    <form method="POST" action="" class="ms-3">
-                                        <input type="hidden" name="action" value="delete_education">
-                                        <input type="hidden" name="degree" value="<?php echo htmlspecialchars($edu['degree']); ?>">
-                                        <input type="hidden" name="institution" value="<?php echo htmlspecialchars($edu['institution']); ?>">
-                                        <!-- Use raw DB format for matching the PK -->
-                                        <input type="hidden" name="start_date" value="<?php echo htmlspecialchars($edu['start_date']); ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete education"
-                                            onclick="return confirm('Delete this education record?');">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-
-            <!-- Employment History -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Employment History</h5>
-                    <?php if ($edit_mode): ?>
-                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addEmploymentModal">
-                            <i class="fas fa-plus me-1"></i>Add Employment
-                        </button>
-                    <?php endif; ?>
-                </div>
-                <div class="card-body">
-                    <?php if (empty($employment_history)): ?>
-                        <p class="text-muted text-center py-3">No employment history added yet.</p>
-                    <?php else: ?>
-                        <?php foreach ($employment_history as $emp): ?>
-                            <div class="border-start border-primary border-3 ps-3 mb-3 d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1"><?php echo htmlspecialchars($emp['job_title']); ?></h6>
-                                    <p class="text-primary mb-1"><?php echo htmlspecialchars($emp['company']); ?></p>
-                                    <?php if (!empty($emp['designation'])): ?>
-                                        <small class="d-block"><?php echo htmlspecialchars($emp['designation']); ?></small>
-                                    <?php endif; ?>
-                                    <small class="text-muted">
-                                        <?php echo date('M Y', strtotime($emp['start_date'])); ?> -
-                                        <?php echo $emp['end_date'] ? date('M Y', strtotime($emp['end_date'])) : 'Present'; ?>
-                                    </small>
-                                </div>
-
-                                <?php if ($edit_mode): ?>
-                                    <form method="POST" action="" class="ms-3">
-                                        <input type="hidden" name="action" value="delete_employment">
-                                        <input type="hidden" name="job_title" value="<?php echo htmlspecialchars($emp['job_title']); ?>">
-                                        <input type="hidden" name="company" value="<?php echo htmlspecialchars($emp['company']); ?>">
-                                        <input type="hidden" name="start_date" value="<?php echo htmlspecialchars($emp['start_date']); ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete employment"
-                                            onclick="return confirm('Delete this employment record?');">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-
-            <!-- Achievements -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Achievements</h5>
-                    <?php if ($edit_mode): ?>
-                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addAchievementModal">
-                            <i class="fas fa-plus me-1"></i>Add Achievement
-                        </button>
-                    <?php endif; ?>
-                </div>
-                <div class="card-body">
-                    <?php if (empty($achievements)): ?>
-                        <p class="text-muted text-center py-3">No achievements added yet.</p>
-                    <?php else: ?>
-                        <?php foreach ($achievements as $ach): ?>
-                            <div class="border-start border-primary border-3 ps-3 mb-3 d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1"><?php echo htmlspecialchars($ach['ach_title']); ?></h6>
-                                    <p class="text-primary mb-1"><?php echo htmlspecialchars($ach['organization'] ?? ''); ?></p>
-                                    <small class="text-muted">
-                                        <?php echo date('M d, Y', strtotime($ach['ach_date'])); ?>
-                                        <?php if (!empty($ach['type'])): ?> • <?php echo htmlspecialchars($ach['type']); ?><?php endif; ?>
-                                    </small>
-                                    <?php if (!empty($ach['description'])): ?>
-                                        <div class="mt-1"><?php echo nl2br(htmlspecialchars($ach['description'])); ?></div>
-                                    <?php endif; ?>
-                                </div>
-
-                                <?php if ($edit_mode): ?>
-                                    <form method="POST" action="" class="ms-3">
-                                        <input type="hidden" name="action" value="delete_achievement">
-                                        <input type="hidden" name="ach_title" value="<?php echo htmlspecialchars($ach['ach_title']); ?>">
-                                        <input type="hidden" name="ach_date" value="<?php echo htmlspecialchars($ach['ach_date']); ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete achievement"
-                                            onclick="return confirm('Delete this achievement?');">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
+            </div><!-- /col-lg-4 -->
+        </div><!-- /row -->
     </div>
+
 
     <!-- Password Verification Modal -->
     <div class="modal fade" id="verifyModal" tabindex="-1">
