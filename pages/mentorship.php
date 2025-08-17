@@ -1244,7 +1244,7 @@ try {
                         <input type="hidden" name="action" value="add_session">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            You will automatically become the organizer of this event.
+                            You will automatically become the organizer of this session.
                         </div>
 
                         <div class="mb-3">
