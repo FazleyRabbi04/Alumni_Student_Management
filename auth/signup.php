@@ -315,7 +315,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
         <div class="mb-3">
             <label for="city" class="form-label">City</label>
-            <input type="text" name="city" class="form-control" id="city" required />
+            <select class="form-select" id="city" name="city" required>
+                <option value="">Select City</option>
+                <option value="Dhaka">Dhaka</option>
+                <option value="Chattogram">Chattogram</option>
+                <option value="Khulna">Khulna</option>
+                <option value="Rajshahi">Rajshahi</option>
+                <option value="Sylhet">Sylhet</option>
+                <option value="Barishal">Barishal</option>
+                <option value="Rangpur">Rangpur</option>
+                <option value="Mymensingh">Mymensingh</option>
+                <option value="Jessore">Jessore</option>
+                <option value="Bogura">Bogura</option>
+            </select>
         </div>
         <div class="mb-3">
             <label for="zip" class="form-label">Zip Code</label>
