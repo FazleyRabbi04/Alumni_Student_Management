@@ -26,6 +26,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $city = trim($_POST['city']);
     $zip = trim($_POST['zip']);
     $user_type = $_POST['user_type'];
+    // Age validation for Alumni
+    if ($user_type === 'alumni') {
+    $dob = new DateTime($date_of_birth);
+    $today = new DateTime();
+    $age = $today->diff($dob)->y;
+
+    if ($age < 20) {
+        $error = 'You must be at least 20 years old to register as Alumni.';
+    }
+}
 
     // Get grad/batch year based on user type
     $grad_batch_year = $user_type === 'student' ? $_POST['batch_year'] : $_POST['grad_batch_year'];
@@ -371,6 +381,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             document.getElementById('batch_year').value = document.getElementById('grad_batch_year').value;
         }
     });
+    document.querySelector('form').addEventListener('submit', function (e) {
+    const userType = document.getElementById('user_type').value;
+    const dobValue = document.getElementById('date_of_birth').value;
+
+    if (userType === 'alumni' && dobValue) {
+        const dob = new Date(dobValue);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        if (age < 20) {
+            alert("You must be at least 20 years old to register as Alumni.");
+            e.preventDefault(); // stop form submission
+        }
+    }
+});
+
 </script>
 </body>
 </html>
